@@ -23,6 +23,7 @@ class AgentState(TypedDict, total=False):
     provider: str
     openrouter_api_key: str | None
     model: str | None
+    critic_strictness: int
     documents: List[DocumentPayload]
     draft: str
     critique: CritiquePayload

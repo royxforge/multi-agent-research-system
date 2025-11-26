@@ -2,7 +2,10 @@ from __future__ import annotations
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import StreamingResponse
 import structlog
+import json
+import asyncio
 
 from src.agents.graph import build_research_graph
 from src.agents.state import AgentState
@@ -24,6 +27,54 @@ app.add_middleware(
 app.state.graph = build_research_graph()
 
 
+@app.post("/research/stream")
+async def run_research_stream(request: ResearchRequest):
+    graph = getattr(app.state, "graph", None)
+    if graph is None:
+        graph = build_research_graph()
+        app.state.graph = graph
+
+    initial_state: AgentState = {
+        "query": request.topic,
+        "max_depth": request.max_depth,
+        "max_search_results": request.num_papers,
+        "provider": request.provider,
+        "openrouter_api_key": request.openrouter_api_key,
+        "model": request.model,
+        "critic_strictness": request.critic_strictness,
+    }
+
+    async def event_generator():
+        try:
+            # Stream events from the graph
+            async for event in graph.astream_events(initial_state, version="v1"):
+                kind = event["event"]
+                
+                # Filter for node start/end events to track progress
+                if kind == "on_chain_start" and event["name"] in ["research", "draft", "critique"]:
+                    yield f"data: {json.dumps({'type': 'progress', 'step': event['name'], 'status': 'running'})}\n\n"
+                
+                elif kind == "on_chain_end" and event["name"] in ["research", "draft", "critique"]:
+                    yield f"data: {json.dumps({'type': 'progress', 'step': event['name'], 'status': 'completed'})}\n\n"
+
+            # Get final state to return the result
+            final_state = await graph.ainvoke(initial_state)
+            draft = final_state.get("draft")
+            sources = [doc["source"] for doc in final_state.get("documents", [])]
+            
+            if not draft:
+                yield f"data: {json.dumps({'type': 'error', 'message': 'Workflow produced no draft'})}\n\n"
+            else:
+                result = ResearchResponse(final_report=draft, sources=sources, topic=request.topic)
+                yield f"data: {json.dumps({'type': 'result', 'data': result.model_dump()})}\n\n"
+
+        except Exception as e:
+            logger.error("stream.error", error=str(e))
+            yield f"data: {json.dumps({'type': 'error', 'message': str(e)})}\n\n"
+
+    return StreamingResponse(event_generator(), media_type="text/event-stream")
+
+
 @app.post("/research", response_model=ResearchResponse)
 async def run_research(request: ResearchRequest) -> ResearchResponse:
     graph = getattr(app.state, "graph", None)
@@ -39,9 +90,10 @@ async def run_research(request: ResearchRequest) -> ResearchResponse:
         "provider": request.provider,
         "openrouter_api_key": request.openrouter_api_key,
         "model": request.model,
+        "critic_strictness": request.critic_strictness,
     }
 
-    logger.info("api.research.start", topic=request.topic, max_depth=request.max_depth, papers=request.num_papers, provider=request.provider, model=request.model)
+    logger.info("api.research.start", topic=request.topic, max_depth=request.max_depth, papers=request.num_papers, provider=request.provider, model=request.model, strictness=request.critic_strictness)
     try:
         result: AgentState = await graph.ainvoke(initial_state)
     except Exception as exc:
@@ -55,4 +107,4 @@ async def run_research(request: ResearchRequest) -> ResearchResponse:
 
     sources = [doc["source"] for doc in result.get("documents", [])]
     logger.info("api.research.complete", sources=len(sources))
-    return ResearchResponse(final_report=draft, sources=sources)
+    return ResearchResponse(final_report=draft, sources=sources, topic=request.topic)

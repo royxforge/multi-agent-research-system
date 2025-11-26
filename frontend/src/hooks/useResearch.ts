@@ -43,18 +43,53 @@ export function useResearch() {
     setCurrentResult(null)
 
     try {
-      const response = await runResearch(request)
-      setCurrentResult(response)
-      
-      saveToHistory({
-        ...response,
-        id: crypto.randomUUID(),
-        topic: request.topic,
-        depth: request.max_depth,
-        timestamp: Date.now(),
+      // Use the streaming endpoint
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8000'}/research/stream`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(request),
       })
-      
-      return response
+
+      if (!response.ok) throw new Error('Failed to start research stream')
+      if (!response.body) throw new Error('ReadableStream not supported')
+
+      const reader = response.body.getReader()
+      const decoder = new TextDecoder()
+
+      while (true) {
+        const { done, value } = await reader.read()
+        if (done) break
+
+        const chunk = decoder.decode(value)
+        const lines = chunk.split('\n\n')
+        
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            try {
+              const data = JSON.parse(line.slice(6))
+              
+              if (data.type === 'progress') {
+                // Dispatch custom event for LoadingState to consume
+                window.dispatchEvent(new CustomEvent('research-progress', { detail: data }))
+              } else if (data.type === 'result') {
+                const result = data.data
+                setCurrentResult(result)
+                saveToHistory({
+                  ...result,
+                  id: crypto.randomUUID(),
+                  topic: request.topic,
+                  depth: request.max_depth,
+                  timestamp: Date.now(),
+                })
+              } else if (data.type === 'error') {
+                throw new Error(data.message)
+              }
+            } catch (e) {
+              console.warn('Failed to parse stream message', e)
+            }
+          }
+        }
+      }
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Unknown error occurred'
       setError(msg)

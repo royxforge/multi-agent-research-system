@@ -5,6 +5,7 @@ import { LoadingState } from './components/LoadingState'
 import { useResearch } from './hooks/useResearch'
 import { AlertCircle, Sparkles, Brain, Database, FileText } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
+import { ErrorBoundary } from './components/ErrorBoundary'
 
 function App() {
   const { 
@@ -17,14 +18,15 @@ function App() {
     setCurrentResult 
   } = useResearch()
 
-  const handleResearch = (topic: string, depth: number, numPapers: number, provider: string, apiKey?: string, model?: string) => {
+  const handleResearch = (topic: string, depth: number, numPapers: number, provider: string, apiKey?: string, model?: string, strictness?: number) => {
     executeResearch({ 
       topic, 
       max_depth: depth, 
       num_papers: numPapers,
       provider,
       openrouter_api_key: apiKey,
-      model
+      model,
+      critic_strictness: strictness
     })
   }
 
@@ -116,7 +118,9 @@ function App() {
                   {isLoading ? (
                     <LoadingState />
                   ) : currentResult ? (
-                    <ReportView data={currentResult} />
+                    <ErrorBoundary>
+                      <ReportView data={currentResult} />
+                    </ErrorBoundary>
                   ) : null}
                 </motion.div>
               )}

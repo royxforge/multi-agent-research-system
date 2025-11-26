@@ -23,17 +23,18 @@ Academic research is time-consuming. Finding relevant papers, reading them, synt
 | Feature | Auto-Researcher | Standard Chatbots (ChatGPT/Claude) | Traditional Search |
 | :--- | :--- | :--- | :--- |
 | **Architecture** | **Multi-Agent Loop** (Researcher → Analyst → Critic) | Single-shot generation | Manual keyword search |
+| **Visibility** | **Real-time Streaming** (Watch agents think & work) | Static loading state | N/A |
 | **Flexibility** | **Hybrid Engine** (Local Ollama OR Cloud OpenRouter) | Vendor Lock-in | N/A |
 | **Source Truth** | **Grounded in PDFs** (Arxiv, Edu, ResearchGate) | Training data (often outdated/hallucinated) | Links only (no synthesis) |
 | **Privacy** | **Local Option Available** (Ollama) | Data sent to cloud | N/A |
 | **Depth** | **Iterative Refinement** (Self-Correction) | First draft only | N/A |
-| **Customization** | **Adjustable Depth, Source Count & Model** | Fixed parameters | N/A |
+| **Customization** | **Adjustable Depth, Source Count & Strictness** | Fixed parameters | N/A |
 
 ---
 
 ## 🧠 How It Works
 
-The system utilizes a **Graph-based Multi-Agent Architecture** (built with LangGraph):
+The system utilizes a **Graph-based Multi-Agent Architecture** (built with LangGraph) with **Real-time Streaming**:
 
 ![Processing Screen](assets/ProcessingScreen.png)
 
@@ -50,14 +51,18 @@ The system utilizes a **Graph-based Multi-Agent Architecture** (built with LangG
 3.  **⚖️ The Critic:**
     *   **Fact-Checking:** Reviews the draft for hallucinations and vague generalizations.
     *   **Quantitative Enforcement:** Rejects drafts that lack specific numbers/data.
-    *   **Feedback Loop:** Triggers revisions if the quality score drops below 7.0/10.
+    *   **Feedback Loop:** Triggers revisions if the quality score drops below the threshold (configurable via Strictness setting).
+
+**Real-time Updates:** The backend streams events (SSE) to the frontend, allowing you to watch the agents transition between states (Researching → Drafting → Critiquing) live.
 
 ---
 
 ## 🛠️ Tech Stack
 
 *   **Backend:** Python, FastAPI, LangGraph, LangChain
+*   **Communication:** Server-Sent Events (SSE) for real-time streaming
 *   **Frontend:** React 19, Vite, Tailwind CSS v4, Framer Motion
+*   **Visualization:** React Force Graph (Interactive Knowledge Graph)
 *   **LLM Engine:** 
     *   **Local:** Ollama (Llama 3, Mistral, etc.)
     *   **Cloud:** OpenRouter (Grok, GPT-4, Claude, etc.)
@@ -113,6 +118,7 @@ The system utilizes a **Graph-based Multi-Agent Architecture** (built with LangG
 3.  **Configure Research:**
     *   **Depth:** Controls the length and detail of the report (Fast / Balanced / Deep).
     *   **Papers:** Select how many sources to analyze (5 - 50).
+    *   **Strictness:** Adjust the Critic's threshold for accepting drafts (Lenient / Balanced / Strict).
     *   **Provider:** Choose **Ollama** (Local) or **OpenRouter** (Cloud).
     *   **Model Name:** Specify the model (e.g., `llama3` or `x-ai/grok-4.1-fast`).
 4.  Click the arrow to start. The system will visualize the research steps in real-time.
@@ -126,9 +132,11 @@ The system utilizes a **Graph-based Multi-Agent Architecture** (built with LangG
 
 *   [x] **Cloud Mode:** Optional switch to OpenRouter for heavier workloads.
 *   [x] **Dark Mode:** Fully supported UI theme.
-*   [ ] **Visual Knowledge Graph:** Interactive node-link diagram of cited papers.
-*   [ ] **PDF Export:** Direct export to formatted PDF.
-*   [ ] **Custom Agent Personas:** Configurable "Strictness" for the Critic.
+*   [x] **Visual Knowledge Graph:** Interactive node-link diagram of cited papers.
+*   [x] **PDF Export:** Direct export to formatted PDF.
+*   [x] **Custom Agent Personas:** Configurable "Strictness" for the Critic.
+*   [ ] **Multi-Document Chat:** Chat with the collected sources after the review is generated.
+*   [ ] **Zotero/Mendeley Integration:** Direct export to reference managers.
 
 ---
 

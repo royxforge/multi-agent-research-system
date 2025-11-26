@@ -1,9 +1,9 @@
 import { useState } from 'react'
 import { motion } from 'framer-motion'
-import { Search, Sliders, ArrowRight, Cpu, Key } from 'lucide-react'
+import { Search, Sliders, ArrowRight, Cpu, Key, Scale } from 'lucide-react'
 
 interface Props {
-  onSubmit: (topic: string, depth: number, numPapers: number, provider: string, apiKey?: string, model?: string) => void
+  onSubmit: (topic: string, depth: number, numPapers: number, provider: string, apiKey?: string, model?: string, strictness?: number) => void
   isLoading: boolean
 }
 
@@ -11,13 +11,14 @@ export function ResearchForm({ onSubmit, isLoading }: Props) {
   const [topic, setTopic] = useState('')
   const [depth, setDepth] = useState(3)
   const [numPapers, setNumPapers] = useState(10)
+  const [strictness, setStrictness] = useState(5)
   const [provider, setProvider] = useState('ollama')
   const [apiKey, setApiKey] = useState('')
   const [model, setModel] = useState('')
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    if (topic.trim()) onSubmit(topic, depth, numPapers, provider, apiKey, model)
+    if (topic.trim()) onSubmit(topic, depth, numPapers, provider, apiKey, model, strictness)
   }
 
   return (
@@ -103,6 +104,27 @@ export function ResearchForm({ onSubmit, isLoading }: Props) {
             value={numPapers}
             onChange={(e) => setNumPapers(Number(e.target.value))}
             className="w-full h-1 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:bg-cyan-400 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:transition-transform [&::-webkit-slider-thumb]:hover:scale-125"
+          />
+        </div>
+
+        {/* Strictness Slider */}
+        <div className="space-y-2 md:col-span-2">
+          <div className="flex items-center justify-between text-sm text-slate-500 dark:text-slate-400">
+            <div className="flex items-center gap-2">
+              <Scale className="w-4 h-4" />
+              <span>Critic Strictness: {strictness}/10</span>
+            </div>
+            <span className="text-xs text-slate-400 uppercase tracking-wider">
+              {strictness < 4 ? 'Lenient' : strictness < 8 ? 'Balanced' : 'Strict'}
+            </span>
+          </div>
+          <input
+            type="range"
+            min="1"
+            max="10"
+            value={strictness}
+            onChange={(e) => setStrictness(Number(e.target.value))}
+            className="w-full h-1 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:bg-rose-400 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:transition-transform [&::-webkit-slider-thumb]:hover:scale-125"
           />
         </div>
       </div>

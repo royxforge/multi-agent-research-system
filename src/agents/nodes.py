@@ -132,13 +132,17 @@ def _build_draft_prompt(topic: str, depth: int, context_sections: str, feedback:
         "1. NO FLUFF. Do not use phrases like 'The paper discusses' or 'It is important to note'. State facts directly.\n"
         "2. Prioritize quantitative data (numbers, percentages, dates) over general statements.\n"
         "3. Use bullet points for 'Key Findings' to maximize readability.\n"
-        "4. WRITE AT LENGTH. Each section must be detailed and exhaustive. Do not summarize briefly.\n\n"
+        "4. WRITE AT LENGTH. Each section must be detailed and exhaustive. Do not summarize briefly.\n"
+        "5. CITATIONS ARE MANDATORY. Every claim must be backed by a source [S#].\n"
+        "6. SYNTHESIZE. Do not just list papers. Connect findings across sources.\n\n"
         "Structure:\n"
         "# Title\n\n"
         "## Executive Summary\n"
         "(300+ words synthesizing the core narrative and high-level conclusions)\n\n"
         "## Key Findings\n"
         "(Detailed bullet points with inline citations [S#]. Group by themes (e.g., 'Theme 1: ...'). Aim for 800+ words.)\n\n"
+        "## Critical Analysis\n"
+        "(Evaluate the strength of the evidence, conflicting results, and limitations of the current body of work. 300+ words.)\n\n"
         "## Methodological Notes\n"
         "(Analyze the methods used in the sources: qualitative/quantitative/review. 300+ words.)\n\n"
         "## Implications & Open Questions\n"
@@ -166,30 +170,43 @@ async def critique_node(state: AgentState) -> AgentState:
     llm = _get_llm(provider=provider, model=model, api_key=api_key)
     context = _format_sources(documents)
 
+    strictness = state.get("critic_strictness", 5)
+    # Calculate passing threshold: 1->5.0, 5->7.0, 10->9.5
+    threshold = 4.5 + (strictness * 0.5)
+
+    strictness_instruction = "Be balanced. Ensure accuracy and good citation usage."
+    if strictness <= 3:
+        strictness_instruction = "Be lenient. Focus only on major factual errors. Accept general statements if they seem reasonable."
+    elif strictness >= 8:
+        strictness_instruction = "Be extremely strict. Nitpick every detail, require high citation density, and penalize any vague language severely."
+
     critique_prompt = (
-        "You are the Critic agent. Score the draft from 1-10 for accuracy and rigor. "
+        f"You are the Critic agent. Strictness Level: {strictness}/10. {strictness_instruction} "
+        "Score the draft from 1-10 for accuracy and rigor. "
         "Estimate hallucination probability between 0 and 1 based on mismatches with the evidence bank. "
         "Check if the draft contains specific quantitative data or just vague generalizations. "
+        "Verify that citations [S#] are used correctly and exist in the evidence bank. "
         "Respond ONLY in JSON like "
         '{"score": 8.5, "hallucination": 0.2, "vague": false, "feedback": "..."}. '
         f"\nEvidence Bank:\n{context}\n\nDraft:\n{draft}"
     )
 
-    print("Analyzing draft quality...")
+    print(f"Analyzing draft quality (Strictness: {strictness}, Threshold: {threshold})...")
     response = await llm.ainvoke([SystemMessage(content="You are the Critic who ensures fidelity to evidence."), HumanMessage(content=critique_prompt)])
     critique_data = _parse_critique(response)
 
+    score = critique_data.get("score", 0)
     needs_revision = bool(
-        critique_data.get("score", 0) < 7.0
+        score < threshold
         or critique_data.get("hallucination_score", 0) > 0.4
         or critique_data.get("is_vague", False)
     )
     revisions = state.get("revision_count", 0)
     if needs_revision and revisions < 1:
         revisions += 1
-        print(f"Critique: Needs revision (Score: {critique_data.get('score')}, Feedback: {critique_data.get('feedback')[:50]}...)")
+        print(f"Critique: Needs revision (Score: {score}/{threshold}, Feedback: {critique_data.get('feedback')[:50]}...)")
     else:
-        print(f"Critique: Passed (Score: {critique_data.get('score')})")
+        print(f"Critique: Passed (Score: {score}/{threshold})")
 
     payload: CritiquePayload = {
         "score": float(critique_data.get("score", 0)),
