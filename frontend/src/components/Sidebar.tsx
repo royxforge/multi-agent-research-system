@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react'
-import { Plus, MessageSquare, Moon, Sun, History, ChevronLeft, Search, Lock, Unlock, Fingerprint, Trash2, Copy, Check, ShieldAlert, Eye, ArrowLeft, Save } from 'lucide-react'
+import { Plus, MessageSquare, Moon, Sun, History, ChevronLeft, Lock, Unlock, Fingerprint, Trash2, Copy, Check, ShieldAlert, Eye, ArrowLeft, Save } from 'lucide-react'
+import { BrandIcon } from './BrandIcon'
+import { setFavicon } from '../lib/favicon'
 import type { HistoryItem } from '../hooks/useResearch'
 import { formatDistanceToNow } from 'date-fns'
 
@@ -70,6 +72,7 @@ export function Sidebar({
       document.documentElement.classList.remove('dark')
       localStorage.theme = 'light'
     }
+    setFavicon(isDark ? 'dark' : 'light')
   }, [isDark])
 
   const toggleTheme = () => setIsDark(!isDark)
@@ -114,15 +117,14 @@ export function Sidebar({
               <Plus className="w-4 h-4" />
             </button>
           ) : (
-            <>
-              <div className="flex items-center justify-between mb-4 px-0.5">
+            <>                <div className="flex items-center justify-between mb-4 px-0.5">
                 <div className="flex items-center gap-2.5">
-                  <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-primary-600 to-primary-500 flex items-center justify-center shadow-sm shadow-primary-500/20">
-                    <Search className="w-4 h-4 text-white" />
+                  <div className="shrink-0">
+                    <BrandIcon size={32} />
                   </div>
                   <div>
-                    <span className="text-sm font-semibold text-warm-800 dark:text-warm-200">Researcher</span>
-                    <p className="text-[10px] text-warm-400 -mt-0.5">AI-powered</p>
+                    <span className="text-sm font-semibold text-warm-800 dark:text-warm-200">Auto-Researcher</span>
+                    <p className="text-[11px] text-warm-400 -mt-0.5">AI-Powered</p>
                   </div>
                 </div>
               </div>

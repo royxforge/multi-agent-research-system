@@ -2,19 +2,20 @@ import { useNavigate } from 'react-router-dom'
 import {
   TrendingUp, BookOpen, Network, FileSearch, FileText,
   Lock, Scale, Zap, Sliders, Globe, Search, CheckCircle2,
-  ArrowDown, Pen, ExternalLink
+  ArrowDown, Pen, ExternalLink, RefreshCw
 } from 'lucide-react'
 import ReactMarkdown from 'react-markdown'
 import { motion } from 'framer-motion'
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { EXAMPLE_REPORT } from '../lib/exampleReport'
+import { fetchTrendingTopics, refreshTrendingTopics } from '../lib/api'
 
-const TRENDING_TOPICS = [
-  "Future of Solid State Batteries",
-  "CRISPR Gene Editing Ethics",
-  "Impact of AI on Labor Markets",
-  "Quantum Computing in 2025",
-  "Sustainable Urban Planning"
+const FALLBACK_TOPICS = [
+  "Autonomous Multi-Agent Systems",
+  "AI Governance & Safety",
+  "TinyML & Edge AI",
+  "AI-Driven Scientific Discovery",
+  "Synthetic Data & Model Collapse"
 ]
 
 /* ─── Live metric component (real-time dashboard feel) ─── */
@@ -105,7 +106,7 @@ function LiveMetric({ icon: Icon, label, targetValue, prefix, suffix, decimals, 
           <span className="text-[9px] text-emerald-500 font-medium tracking-wider uppercase">Live</span>
         </div>
 
-        <div className={`w-9 h-9 rounded-xl bg-gradient-to-br ${gradient} flex items-center justify-center mx-auto mb-2.5 ring-1 ring-white/10 group-hover:scale-110 transition-transform duration-300`}>
+        <div className={`w-9 h-9 rounded-xl bg-gradient-to-br ${color} flex items-center justify-center mx-auto mb-2.5 ring-1 ring-white/10 group-hover:scale-110 transition-transform duration-300`}>
           <Icon className="w-[16px] h-[16px] text-white" />
         </div>
 
@@ -123,6 +124,25 @@ export default function Welcome() {
   const navigate = useNavigate()
   const heroRef = useRef<HTMLDivElement>(null)
   const [mousePos, setMousePos] = useState({ x: 50, y: 50 })
+  const [trendingTopics, setTrendingTopics] = useState<string[]>([])
+  const [trendingTopicsLoading, setTrendingTopicsLoading] = useState(true)
+  const [trendingTopicsRefreshing, setTrendingTopicsRefreshing] = useState(false)
+
+  useEffect(() => {
+    setTrendingTopicsLoading(true)
+    fetchTrendingTopics().then(topics => {
+      setTrendingTopics(topics)
+      setTrendingTopicsLoading(false)
+    })
+  }, [])
+
+  const handleRefreshTrending = useCallback(() => {
+    setTrendingTopicsRefreshing(true)
+    refreshTrendingTopics().then(topics => {
+      if (topics.length > 0) setTrendingTopics(topics)
+      setTrendingTopicsRefreshing(false)
+    })
+  }, [])
 
   useEffect(() => {
     const handleMouse = (e: MouseEvent) => {
@@ -206,7 +226,7 @@ export default function Welcome() {
               <span className="gradient-text">Instantly.</span>
             </h1>
             <p className="text-base sm:text-lg text-warm-500 dark:text-warm-400 max-w-xl mx-auto leading-relaxed">
-              Autonomous agents search, analyze, and synthesize academic papers into comprehensive reports — all in seconds.
+              Autonomous agents search, analyze, and synthesize academic papers into comprehensive reports, all in seconds.
             </p>
           </motion.div>
 
@@ -230,15 +250,33 @@ export default function Welcome() {
               <TrendingUp className="w-3.5 h-3.5" />
               Trending
             </span>
-            {TRENDING_TOPICS.map((topic, i) => (
-              <button
-                key={i}
-                onClick={() => navigate(`/app?topic=${encodeURIComponent(topic)}`)}
-                className="group px-3.5 py-1.5 text-xs text-warm-500 hover:text-warm-800 dark:text-warm-400 dark:hover:text-warm-200 glass-card hover:shadow-md transition-all duration-200"
-              >
-                {topic}
-              </button>
-            ))}
+            <button
+              onClick={handleRefreshTrending}
+              disabled={trendingTopicsRefreshing}
+              className="flex items-center justify-center w-[22px] h-[22px] rounded-full text-warm-400 hover:text-warm-600 dark:hover:text-warm-300 hover:bg-warm-200/50 dark:hover:bg-[#2a2724]/50 transition-all duration-200 disabled:opacity-50"
+              title="Refresh trending topics"
+            >
+              <RefreshCw className={`w-[14px] h-[14px] ${trendingTopicsRefreshing ? 'animate-spin' : ''}`} />
+            </button>
+            {trendingTopicsLoading ? (
+              Array.from({ length: 5 }).map((_, i) => (
+                <div
+                  key={i}
+                  className="h-[28px] w-[110px] sm:w-[130px] rounded-full glass-card animate-pulse"
+                  style={{ animationDelay: `${i * 60}ms`, opacity: 0.5 }}
+                />
+              ))
+            ) : (
+              (trendingTopics.length > 0 ? trendingTopics : FALLBACK_TOPICS).map((topic, i) => (
+                <button
+                  key={i}
+                  onClick={() => navigate(`/app?topic=${encodeURIComponent(topic)}&auto=1`)}
+                  className="group px-3.5 py-1.5 text-xs text-warm-500 hover:text-warm-800 dark:text-warm-400 dark:hover:text-warm-200 glass-card hover:shadow-md transition-all duration-200"
+                >
+                  {topic}
+                </button>
+              ))
+            )}
           </motion.div>
 
           {/* ─── How It Works ─── */}
@@ -253,7 +291,7 @@ export default function Welcome() {
             </div>
 
             <div className="relative">
-              {/* Connecting line — animated gradient + particles */}
+              {/* Connecting line - animated gradient + particles */}
               <div className="hidden sm:block absolute top-[60px] left-[calc(16.67%+20px)] right-[calc(16.67%+20px)]">
                 <div className="h-[2px] bg-[length:200%_100%] bg-gradient-to-r from-transparent via-primary-400/40 via-accent-400/30 via-primary-400/40 to-transparent animate-[flow-line_4s_linear_infinite] rounded-full" />
                 <div className="absolute inset-0 pointer-events-none">
@@ -488,7 +526,7 @@ export default function Welcome() {
                 Everything you need for deep research
               </h2>
               <p className="text-sm text-warm-500 dark:text-warm-400 mt-1.5">
-                Autonomous agents handle the heavy lifting — from searching to synthesizing
+                Autonomous agents handle the heavy lifting, from searching to synthesizing
               </p>
             </div>
 
@@ -533,7 +571,7 @@ export default function Welcome() {
                 {
                   icon: Globe,
                   label: '10+ LLM providers',
-                  desc: 'Ollama, OpenAI, Anthropic, Google, DeepSeek, Mistral, and more — local or cloud.',
+                  desc: 'Ollama, OpenAI, Anthropic, Google, DeepSeek, Mistral, and more, local or cloud.',
                   tag: 'Flexibility',
                   tagColor: 'bg-sky-100/80 dark:bg-sky-900/30 text-sky-700 dark:text-sky-300 border-sky-200/50 dark:border-sky-800/50',
                   iconBg: 'bg-sky-50 dark:bg-sky-950/40',

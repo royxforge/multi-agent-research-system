@@ -3,11 +3,12 @@ import { ResearchForm } from './components/ResearchForm'
 import { ReportView } from './components/ReportView'
 import { LoadingState } from './components/LoadingState'
 import { useResearch } from './hooks/useResearch'
-import { TrendingUp, AlertCircle } from 'lucide-react'
+import { TrendingUp, AlertCircle, RefreshCw } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { ErrorBoundary } from './components/ErrorBoundary'
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useSearchParams, useNavigate } from 'react-router-dom'
+import { fetchTrendingTopics, refreshTrendingTopics } from './lib/api'
 import {
   hasBiometricCredential,
   getRecoveryHint,
@@ -18,12 +19,12 @@ import {
 } from './lib/webauthn'
 import { encryptWithRawKey, decryptWithRawKey, encryptField, decryptField } from './lib/crypto'
 
-const TRENDING_TOPICS = [
-  "Future of Solid State Batteries",
-  "CRISPR Gene Editing Ethics",
-  "Impact of AI on Labor Markets",
-  "Quantum Computing in 2025",
-  "Sustainable Urban Planning"
+const FALLBACK_TOPICS = [
+  "Autonomous Multi-Agent Systems",
+  "AI Governance & Safety",
+  "TinyML & Edge AI",
+  "AI-Driven Scientific Discovery",
+  "Synthetic Data & Model Collapse"
 ]
 
 function App() {
@@ -32,6 +33,8 @@ function App() {
     error,
     currentResult,
     history,
+    queueLength,
+    queuedTopics,
     executeResearch,
     stopResearch,
     clearHistory,
@@ -48,14 +51,43 @@ function App() {
   const [searchParams] = useSearchParams()
   const navigate = useNavigate()
   const heroRef = useRef<HTMLDivElement>(null)
+  const [trendingTopics, setTrendingTopics] = useState<string[]>([])
+  const [trendingTopicsLoading, setTrendingTopicsLoading] = useState(true)
+  const [trendingTopicsRefreshing, setTrendingTopicsRefreshing] = useState(false)
   const [mousePos, setMousePos] = useState({ x: 50, y: 50 })
+  const autoStartedRef = useRef(false)
+  const [toast, setToast] = useState<{ message: string } | null>(null)
+  const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const errorTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  // Read ?topic= from URL (e.g. when coming from Welcome page)
+  // Auto-dismiss toast after 3.5s
+  useEffect(() => {
+    if (toast) {
+      if (toastTimerRef.current) clearTimeout(toastTimerRef.current)
+      toastTimerRef.current = setTimeout(() => setToast(null), 3500)
+    }
+    return () => {
+      if (toastTimerRef.current) clearTimeout(toastTimerRef.current)
+    }
+  }, [toast])
+
+  // Fetch trending topics on mount
+  useEffect(() => {
+    setTrendingTopicsLoading(true)
+    fetchTrendingTopics().then(topics => {
+      setTrendingTopics(topics)
+      setTrendingTopicsLoading(false)
+    })
+  }, [])
+
+  // Read URL params (e.g. when coming from Welcome page) — auto-start only once
   useEffect(() => {
     const topicParam = searchParams.get('topic')
-    if (topicParam) {
+    if (topicParam && searchParams.get('auto') === '1' && !autoStartedRef.current) {
+      autoStartedRef.current = true
       setSelectedTopic(topicParam)
+      setToast({ message: `Starting research on "${topicParam}"` })
+      handleResearch(topicParam, 3, 10, 'ollama')
     }
   }, [searchParams])
 
@@ -218,6 +250,14 @@ function App() {
     })
   }
 
+  const handleRefreshTrending = useCallback(() => {
+    setTrendingTopicsRefreshing(true)
+    refreshTrendingTopics().then(topics => {
+      if (topics.length > 0) setTrendingTopics(topics)
+      setTrendingTopicsRefreshing(false)
+    })
+  }, [])
+
   return (
     <div className="flex h-screen bg-warm-50 dark:bg-[#0c0b0a] text-warm-800 dark:text-warm-300 overflow-hidden selection:bg-primary-500 selection:text-white dark:selection:bg-primary-400 dark:selection:text-[#0c0b0a]">
       <Sidebar
@@ -310,15 +350,40 @@ function App() {
                         <TrendingUp className="w-3 h-3" />
                         Trending
                       </span>
-                      {TRENDING_TOPICS.map((topic, i) => (
-                        <button
-                          key={i}
-                          onClick={() => setSelectedTopic(topic)}
-                          className="px-3 py-1 text-[11px] text-warm-400 hover:text-warm-700 dark:hover:text-warm-300 glass-card hover:shadow-sm transition-all duration-200"
-                        >
-                          {topic}
-                        </button>
-                      ))}
+                      <button
+                        onClick={handleRefreshTrending}
+                        disabled={trendingTopicsRefreshing}
+                        className="flex items-center justify-center w-5 h-5 rounded-full text-warm-400 hover:text-warm-600 dark:hover:text-warm-300 hover:bg-warm-200/50 dark:hover:bg-[#2a2724]/50 transition-all duration-200 disabled:opacity-50"
+                        title="Refresh trending topics"
+                      >
+                        <RefreshCw className={`w-3 h-3 ${trendingTopicsRefreshing ? 'animate-spin' : ''}`} />
+                      </button>
+                      {trendingTopicsLoading ? (
+                        Array.from({ length: 5 }).map((_, i) => (
+                          <div
+                            key={i}
+                            className="h-[26px] w-[100px] sm:w-[120px] rounded-full glass-card animate-pulse"
+                            style={{ animationDelay: `${i * 60}ms`, opacity: 0.5 }}
+                          />
+                        ))
+                      ) : (
+                        (trendingTopics.length > 0 ? trendingTopics : FALLBACK_TOPICS).map((topic, i) => (
+                          <button
+                            key={i}
+                            onClick={() => {
+                              if (isLoading) {
+                                setToast({ message: `Queued "${topic}"` })
+                              } else {
+                                setToast({ message: `Starting research on "${topic}"` })
+                              }
+                              handleResearch(topic, 3, 10, 'ollama')
+                            }}
+                            className="px-3 py-1 text-[11px] text-warm-400 hover:text-warm-700 dark:hover:text-warm-300 glass-card hover:shadow-sm transition-all duration-200"
+                          >
+                            {topic}
+                          </button>
+                        ))
+                      )}
                     </div>
                   </div>
 
@@ -352,6 +417,30 @@ function App() {
                   </motion.div>
                 )}
 
+                {/* Queue badge */}
+                {queueLength > 0 && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="mb-4"
+                  >
+                    <div className="inline-flex items-center gap-2 px-4 py-2 rounded-xl glass-card border-primary-300/40 dark:border-primary-700/40 shadow-sm">
+                      <div className="flex items-center gap-1.5">
+                        <span className="relative flex h-2 w-2">
+                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary-400 opacity-75" />
+                          <span className="relative inline-flex rounded-full h-2 w-2 bg-primary-500" />
+                        </span>
+                        <span className="text-xs font-medium text-warm-700 dark:text-warm-300">
+                          {queueLength} {queueLength === 1 ? 'topic' : 'topics'} queued
+                        </span>
+                      </div>
+                      <span className="text-[11px] text-warm-400 truncate max-w-[200px]">
+                        {queuedTopics.join(', ')}
+                      </span>
+                    </div>
+                  </motion.div>
+                )}
+
                 {isLoading ? (
                   <LoadingState onStop={stopResearch} />
                 ) : currentResult ? (
@@ -363,6 +452,25 @@ function App() {
             )}
           </AnimatePresence>
         </div>
+        {/* Toast */}
+        <AnimatePresence>
+          {toast && (
+            <motion.div
+              initial={{ opacity: 0, y: -20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
+              className="fixed top-4 left-1/2 -translate-x-1/2 z-50"
+            >
+              <div className="flex items-center gap-2.5 px-4 py-2.5 rounded-full bg-warm-900/90 dark:bg-warm-100/90 text-white dark:text-warm-900 text-xs font-medium shadow-lg backdrop-blur-sm whitespace-nowrap">
+                <svg className="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
+                </svg>
+                {toast.message}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </main>
     </div>
   )

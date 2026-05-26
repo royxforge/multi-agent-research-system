@@ -13,6 +13,10 @@ export function useResearch() {
   const [error, setError] = useState<string | null>(null)
   const [currentResult, setCurrentResult] = useState<ResearchResponse | null>(null)
   const [history, setHistory] = useState<HistoryItem[]>([])
+  const [queueLength, setQueueLength] = useState(0)
+  const [queuedTopics, setQueuedTopics] = useState<string[]>([])
+  const queueRef = useRef<ResearchRequest[]>([])
+  const processingRef = useRef(false)
   const abortControllerRef = useRef<AbortController | null>(null)
 
   useEffect(() => {
@@ -42,11 +46,25 @@ export function useResearch() {
       abortControllerRef.current.abort()
       abortControllerRef.current = null
       setIsLoading(false)
-      setError('Research stopped by user')
     }
+    processingRef.current = false
+    queueRef.current = []
+    setQueueLength(0)
+    setQueuedTopics([])
+    setError('Research stopped by user')
   }
 
   const executeResearch = async (request: ResearchRequest) => {
+    // Enqueue if a research is already running (ref for synchronous check)
+    if (processingRef.current) {
+      queueRef.current = [...queueRef.current, request]
+      const topics = queueRef.current.map(r => r.topic)
+      setQueueLength(queueRef.current.length)
+      setQueuedTopics(topics)
+      return
+    }
+
+    processingRef.current = true
     setIsLoading(true)
     setError(null)
     setCurrentResult(null)
@@ -119,7 +137,17 @@ export function useResearch() {
       // throw err // Don't rethrow, just set error state
     } finally {
       setIsLoading(false)
+      processingRef.current = false
       abortControllerRef.current = null
+
+      // Start next queued research if any
+      if (queueRef.current.length > 0) {
+        const next = queueRef.current.shift()!
+        const topics = queueRef.current.map(r => r.topic)
+        setQueueLength(queueRef.current.length)
+        setQueuedTopics(topics)
+        executeResearch(next)
+      }
     }
   }
 
@@ -128,6 +156,8 @@ export function useResearch() {
     error,
     currentResult,
     history,
+    queueLength,
+    queuedTopics,
     executeResearch,
     stopResearch,
     clearHistory,
