@@ -58,14 +58,14 @@ Harassment, discriminatory language, or toxic behavior will not be tolerated.
 | **Python** | 3.10+ | Required for the backend |
 | **Node.js** | 18+ | Required for the frontend |
 | **npm** | 9+ | Ships with Node.js |
-| **Ollama** | Latest | Required for local LLM mode — [install guide](https://ollama.com/) |
+| **Ollama** | Latest | Required for local LLM mode - [install guide](https://ollama.com/) |
 | **Git** | Any | Version control |
 
 Optional but recommended:
 
-- **Tavily API key** — for better search results (free tier available)
-- **OpenRouter API key** — for cloud LLM access
-- **LangSmith API key** — for LLM observability and tracing
+- **Tavily API key** - for better search results (free tier available)
+- **OpenRouter API key** - for cloud LLM access
+- **LangSmith API key** - for LLM observability and tracing
 
 ### Initial Setup
 
@@ -113,11 +113,11 @@ Create a `.env` file in the project root:
 # Required for search quality
 TAVILY_API_KEY=tvly-your-key-here
 
-# Local LLM (Ollama — requires Ollama running locally)
+# Local LLM (Ollama - requires Ollama running locally)
 OLLAMA_BASE_URL=http://localhost:11434
 OLLAMA_MODEL=llama3:8b
 
-# Cloud LLM (OpenRouter — optional, for cloud mode)
+# Cloud LLM (OpenRouter - optional, for cloud mode)
 OPENROUTER_API_KEY=sk-or-v1-your-key-here
 OPENROUTER_MODEL=x-ai/grok-4.1-fast
 
@@ -251,15 +251,15 @@ git rebase upstream/main
 
 1. **Start the backend** (`python run.py`) in one terminal
 2. **Start the frontend** (`npm run dev`) in another terminal
-3. Make your changes — the dev servers hot-reload automatically
+3. Make your changes - the dev servers hot-reload automatically
 4. Verify the feature end-to-end in the browser at `http://localhost:5173`
 
 ### Type Checking
 
-Always run type checks before committing — they catch the majority of bugs:
+Always run type checks before committing - they catch the majority of bugs:
 
 ```bash
-# Backend (Python — Pyright or mypy)
+# Backend (Python - Pyright or mypy)
 cd backend
 mypy src/
 
@@ -321,7 +321,7 @@ Before submitting, ensure:
 ```markdown
 ## Description
 
-[Brief description of the change — what it does and why]
+[Brief description of the change - what it does and why]
 
 ## Related Issue
 
@@ -341,7 +341,7 @@ Closes #[issue-number]
 
 ## Testing
 
-[How the change was tested — what you verified]
+[How the change was tested - what you verified]
 
 ## Checklist
 
@@ -414,19 +414,19 @@ async def search_papers(query: str, max_results: int = 10) -> list[PaperResult]:
 ```
 src/
   components/
-    ReportView.tsx        # PascalCase — component file
+    ReportView.tsx        # PascalCase - component file
     KnowledgeGraph.tsx
   hooks/
-    useResearch.ts        # camelCase — hook file
+    useResearch.ts        # camelCase - hook file
   lib/
-    api.ts                # camelCase — utility module
+    api.ts                # camelCase - utility module
     crypto.ts
 ```
 
 **Component structure:**
 
 ```tsx
-// Good — named export, typed props, functional
+// Good - named export, typed props, functional
 interface Props {
   topic: string
   onStart: (topic: string) => void
@@ -462,7 +462,7 @@ export function ResearchForm({ topic, onStart }: Props) {
 ### Adding New Backend Endpoints
 
 1. Define request/response schemas in `src/schemas.py` using Pydantic
-2. Add the route in `src/api.py` — prefer `async def` with proper error handling
+2. Add the route in `src/api.py` - prefer `async def` with proper error handling
 3. If the endpoint streams data, use `StreamingResponse` with SSE format
 4. Add the endpoint URL to the frontend's `src/lib/api.ts`
 5. Document in `README.md` and `CHANGELOG.md`
@@ -478,9 +478,9 @@ export function ResearchForm({ topic, onStart }: Props) {
 
 ### Encryption / Security Considerations
 
-- All encryption happens client-side in the browser — the backend never receives the raw passphrase
+- All encryption happens client-side in the browser - the backend never receives the raw passphrase
 - New encrypted fields must use AES-256-GCM with PBKDF2 (600K iterations)
-- The WebAuthn PRF extension is used for biometric unlock — never store raw biometric data
+- The WebAuthn PRF extension is used for biometric unlock - never store raw biometric data
 - Recovery codes are 5-word phrases (~3.4×10¹⁰ combinations)
 - Clear all sensitive localStorage keys when a user clears their biometric credential
 
@@ -508,4 +508,4 @@ If you're adding a new encrypted field:
 
 - Open a [GitHub Discussion](https://github.com/royxlead/auto-researcher-python/discussions) for questions
 - Open an [Issue](https://github.com/royxlead/auto-researcher-python/issues) for bug reports or feature requests
-- For security vulnerabilities, email the maintainers directly — do not open a public issue
+- For security vulnerabilities, email the maintainers directly - do not open a public issue
