@@ -251,8 +251,10 @@ auto-researcher-python/
 
 ## 🤝 Contributing
 
-Contributions are welcome! Please open an issue or submit a pull request.
+Contributions are welcome! See [CONTRIBUTING.md](CONTRIBUTING.md) for detailed setup instructions, development workflow, and PR guidelines.
 
 ## 📄 License
 
 MIT — see [LICENSE](LICENSE).
+
+See [CHANGELOG.md](CHANGELOG.md) for the full version history and [CONTRIBUTING.md](CONTRIBUTING.md) for development setup and contribution guidelines.
