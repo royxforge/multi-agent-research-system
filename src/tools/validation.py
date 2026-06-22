@@ -62,7 +62,7 @@ def check_factual_consistency(draft: str, documents: List[DocumentPayload]) -> L
     """
     # Extract numbers (integers, floats, percentages, dates)
     # This is a simple regex, might catch some false positives/negatives
-    numbers = re.findall(r'\b\d+(?:\.\d+)?%?\b', draft)
+    numbers = re.findall(r'\b\d+(?:\.\d+)?%?', draft)
     
     # Flatten document content
     full_text = " ".join([doc["content"] for doc in documents])

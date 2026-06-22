@@ -484,3 +484,14 @@ select:focus-visible {
 .dark select:focus-visible {
   outline-color: var(--color-primary-400);
 }
+
+/* ─── Print Styles for PDF Export ─── */
+@media print {
+  body { background: white !important; color: black !important; }
+  .sidebar, .fixed, .sticky { display: none !important; }
+  .glass-card { background: white !important; border: none !important; box-shadow: none !important; }
+  .prose-warm { color: #222 !important; }
+  .prose-warm h1, .prose-warm h2, .prose-warm h3, .prose-warm strong { color: #111 !important; }
+  button { display: none !important; }
+  @page { margin: 2cm; }
+}

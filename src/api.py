@@ -15,12 +15,19 @@ import aiohttp
 import xml.etree.ElementTree as ET
 from collections import Counter
 
+from pydantic import BaseModel
+from fastapi import FastAPI, HTTPException, UploadFile, File
 from src.agents.graph import build_research_graph
 from src.agents.state import AgentState
 from src.config import configure_logging, get_settings
-from src.schemas import ResearchRequest, ResearchResponse
+from src.schemas import ResearchRequest, ResearchResponse, ImageResult
 from src.utils.tracing import TraceLogger
 from src.tools.graph import build_citation_graph
+from src.tools.images import search_related_images, search_related_graphs
+from src.tools.pdf import PDFProcessor
+from src.tools.doi import resolve_dois_batch
+from src.tools.summarize import generate_simple_explanation, generate_timeline_data
+from src.tools.chat import build_chat_prompt
 
 settings = get_settings()
 configure_logging(settings)
@@ -58,7 +65,7 @@ def _safe_log_request(request: ResearchRequest) -> dict:
     }
 
 
-app = FastAPI(title="Auto-Researcher", version="0.1.0")
+app = FastAPI(title="Auto-Researcher", version="0.2.0")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[settings.frontend_origin],
@@ -194,6 +201,7 @@ async def run_research_stream(request: ResearchRequest):
         "encryption_iv": request.encryption_iv,
         "encryption_salt": encryption_salt,
         "encryption_passphrase": encryption_passphrase,
+        "uploaded_content": request.uploaded_content,
         "job_id": job_id,
         "seed": settings.default_seed,
         "temperature": settings.default_temperature,
@@ -205,6 +213,7 @@ async def run_research_stream(request: ResearchRequest):
             "provider": request.provider,
             "retrieval_stats": {},
             "pdf_stats": {},
+            "has_uploaded_content": request.uploaded_content is not None,
         }
     }
 
@@ -255,7 +264,46 @@ async def run_research_stream(request: ResearchRequest):
                 yield f"data: {json.dumps({'type': 'error', 'message': 'Workflow produced no draft'})}\n\n"
             else:
                 graph_data = build_citation_graph(_deduplicate_documents(final_state.get("documents", [])))
-                result = ResearchResponse(final_report=draft, sources=sources, topic=request.topic, graph_data=graph_data)
+
+                # Search for related images and graphs in parallel
+                images, graphs = await asyncio.gather(
+                    asyncio.to_thread(search_related_images, request.topic, 8),
+                    asyncio.to_thread(search_related_graphs, request.topic, 6),
+                )
+
+                image_results = [
+                    ImageResult(
+                        title=img.get("title", ""),
+                        image_url=img.get("image", ""),
+                        thumbnail_url=img.get("thumbnail"),
+                        source_url=img.get("url", ""),
+                        source_domain=img.get("source", ""),
+                        width=int(img["width"]) if img.get("width") and img["width"].isdigit() else None,
+                        height=int(img["height"]) if img.get("height") and img["height"].isdigit() else None,
+                    )
+                    for img in images
+                ]
+                graph_results = [
+                    ImageResult(
+                        title=img.get("title", ""),
+                        image_url=img.get("image", ""),
+                        thumbnail_url=img.get("thumbnail"),
+                        source_url=img.get("url", ""),
+                        source_domain=img.get("source", ""),
+                        width=int(img["width"]) if img.get("width") and img["width"].isdigit() else None,
+                        height=int(img["height"]) if img.get("height") and img["height"].isdigit() else None,
+                    )
+                    for img in graphs
+                ]
+
+                result = ResearchResponse(
+                    final_report=draft,
+                    sources=sources,
+                    topic=request.topic,
+                    graph_data=graph_data,
+                    images=image_results,
+                    graphs=graph_results,
+                )
                 yield f"data: {json.dumps({'type': 'result', 'data': result.model_dump()})}\n\n"
 
         except Exception as e:
@@ -290,6 +338,7 @@ async def run_research(request: ResearchRequest) -> ResearchResponse:
         "encryption_iv": request.encryption_iv,
         "encryption_salt": encryption_salt,
         "encryption_passphrase": encryption_passphrase,
+        "uploaded_content": request.uploaded_content,
         "job_id": job_id,
         "seed": settings.default_seed,
         "temperature": settings.default_temperature,
@@ -301,6 +350,7 @@ async def run_research(request: ResearchRequest) -> ResearchResponse:
             "provider": request.provider,
             "retrieval_stats": {},
             "pdf_stats": {},
+            "has_uploaded_content": request.uploaded_content is not None,
         }
     }
 
@@ -339,6 +389,192 @@ async def run_research(request: ResearchRequest) -> ResearchResponse:
     logger.info("api.research.complete", sources=len(sources))
     
     graph_data = build_citation_graph(_deduplicate_documents(result.get("documents", [])))
+
+    # Search for related images and graphs
+    images = await asyncio.to_thread(search_related_images, request.topic, 8)
+    graphs = await asyncio.to_thread(search_related_graphs, request.topic, 6)
+
+    image_results = [
+        ImageResult(
+            title=img.get("title", ""),
+            image_url=img.get("image", ""),
+            thumbnail_url=img.get("thumbnail"),
+            source_url=img.get("url", ""),
+            source_domain=img.get("source", ""),
+            width=int(img["width"]) if img.get("width") and img["width"].isdigit() else None,
+            height=int(img["height"]) if img.get("height") and img["height"].isdigit() else None,
+        )
+        for img in images
+    ]
+    graph_results = [
+        ImageResult(
+            title=img.get("title", ""),
+            image_url=img.get("image", ""),
+            thumbnail_url=img.get("thumbnail"),
+            source_url=img.get("url", ""),
+            source_domain=img.get("source", ""),
+            width=int(img["width"]) if img.get("width") and img["width"].isdigit() else None,
+            height=int(img["height"]) if img.get("height") and img["height"].isdigit() else None,
+        )
+        for img in graphs
+    ]
     
-    return ResearchResponse(final_report=draft, sources=sources, topic=request.topic, graph_data=graph_data)
+    return ResearchResponse(
+        final_report=draft,
+        sources=sources,
+        topic=request.topic,
+        graph_data=graph_data,
+        images=image_results,
+        graphs=graph_results,
+    )
+
+
+# ── Feature: ArXiv DOI Badges ──────────────────────────────────────
+
+@app.post("/resolve-dois")
+async def resolve_dois(urls: list[str]):
+    """Resolve DOIs for arXiv URLs."""
+    dois = await resolve_dois_batch(urls)
+    return {"dois": dois}
+
+
+# ── Feature: File Upload & Analysis ────────────────────────────────
+
+@app.post("/upload-pdf")
+async def upload_pdf(file: UploadFile = File(...)):
+    """Upload a PDF file and extract its text content."""
+    if not file.filename or not file.filename.lower().endswith(".pdf"):
+        raise HTTPException(status_code=400, detail="Only PDF files are accepted")
+
+    try:
+        raw_bytes = await file.read()
+        if len(raw_bytes) > 50 * 1024 * 1024:  # 50MB limit
+            raise HTTPException(status_code=413, detail="File too large (max 50MB)")
+
+        processor = PDFProcessor(max_concurrency=1)
+        text = await asyncio.to_thread(processor._extract_and_validate, raw_bytes)
+        if not text or len(text.strip()) < 50:
+            raise HTTPException(status_code=422, detail="Could not extract meaningful text from PDF")
+
+        # Truncate to max context chars
+        text = text[: get_settings().max_context_chars]
+        return {"filename": file.filename, "content": text, "char_count": len(text)}
+    except HTTPException:
+        raise
+    except Exception as exc:
+        logger.error("upload.failed", error=str(exc))
+        raise HTTPException(status_code=500, detail=f"Failed to process PDF: {exc}")
+
+
+# ── Feature: Explain / Simplify ────────────────────────────────────
+
+class ExplainRequest(BaseModel):
+    report: str
+    mode: str = "brief"  # "brief" or "eli5"
+
+@app.post("/explain")
+async def explain_report(request: ExplainRequest):
+    """Generate a simplified version of a research report."""
+    brief = generate_simple_explanation(request.report)
+    return {"explanation": brief}
+
+
+# ── Feature: Research Timeline ─────────────────────────────────────
+
+class TimelineRequest(BaseModel):
+    report: str
+    sources: list[str]
+
+@app.post("/timeline")
+async def get_timeline(request: TimelineRequest):
+    """Extract timeline data from a report and its sources."""
+    data = generate_timeline_data(request.report, request.sources)
+    return {"timeline": data}
+
+
+# ── Feature: Follow-up Chat ────────────────────────────────────────
+
+class ChatRequest(BaseModel):
+    question: str
+    report: str
+    sources: list[str]
+    provider: str = "ollama"
+    model: str | None = None
+
+_SYSTEM_PROMPT = (
+    "You are a helpful research assistant. Answer concisely using only the provided report. "
+    "Always format your answer in clean Markdown with headings, paragraphs, bullet points, "
+    "and bold terms for readability."
+)
+
+
+@app.post("/chat")
+async def chat_followup(request: ChatRequest):
+    """Answer a follow-up question about a research report (non-streaming)."""
+    settings = get_settings()
+    prompt = build_chat_prompt(request.question, request.report, request.sources)
+
+    from src.agents.nodes import _get_llm
+    try:
+        llm = _get_llm(
+            provider=request.provider,
+            model=request.model,
+            seed=settings.default_seed,
+            temperature=0.3,
+            top_p=0.9,
+        )
+        from langchain_core.messages import HumanMessage, SystemMessage
+        response = await llm.ainvoke([
+            SystemMessage(content=_SYSTEM_PROMPT),
+            HumanMessage(content=prompt)
+        ])
+        answer = response.content if hasattr(response, "content") else str(response)
+        return {"answer": answer}
+    except Exception as exc:
+        logger.error("chat.failed", error=str(exc))
+        raise HTTPException(status_code=500, detail=f"Chat failed: {exc}")
+
+
+
+
+
+# ── Feature: Generate PDF (returns HTML for client-side printing) ──
+
+class PdfRequest(BaseModel):
+    report: str
+    topic: str
+    sources: list[str]
+
+@app.post("/generate-html")
+async def generate_html(request: PdfRequest):
+    """Generate styled HTML from a report for PDF printing."""
+    import markdown
+    html_body = markdown.markdown(request.report, extensions=["extra", "codehilite"])
+    sources_html = "<ul>" + "".join(f"<li>{s}</li>" for s in request.sources[:20]) + "</ul>"
+    html = f"""<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><title>{request.topic}</title>
+<style>
+body {{ font-family: 'Times New Roman', Georgia, serif; font-size: 12pt; line-height: 1.6; max-width: 800px; margin: 0 auto; padding: 40px; color: #222; }}
+h1 {{ font-size: 22pt; margin-bottom: 5px; }}
+h2 {{ font-size: 16pt; border-bottom: 1px solid #ccc; padding-bottom: 4px; }}
+h3 {{ font-size: 13pt; }}
+p {{ margin-bottom: 10px; }}
+table {{ width: 100%; border-collapse: collapse; }}
+td, th {{ border: 1px solid #ccc; padding: 6px; }}
+pre {{ background: #f5f5f5; padding: 10px; border-radius: 4px; overflow-x: auto; }}
+code {{ background: #f0f0f0; padding: 1px 4px; border-radius: 2px; }}
+ul, ol {{ margin-bottom: 10px; }}
+blockquote {{ border-left: 3px solid #999; padding-left: 15px; color: #555; }}
+.sources {{ margin-top: 30px; padding-top: 20px; border-top: 2px solid #333; }}
+.sources ul {{ font-size: 10pt; color: #555; }}
+@media print {{ body {{ padding: 0; }} }}
+</style></head>
+<body>
+<h1>{request.topic}</h1>
+{html_body}
+<div class="sources"><h2>Sources</h2>{sources_html}</div>
+</body>
+</html>"""
+    return {"html": html}
 

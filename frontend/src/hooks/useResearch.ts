@@ -6,6 +6,8 @@ export type HistoryItem = ResearchResponse & {
   topic: string
   timestamp: number
   depth: number
+  provider: string
+  model?: string
 }
 
 export function useResearch() {
@@ -116,6 +118,8 @@ export function useResearch() {
                   id: crypto.randomUUID(),
                   topic: request.topic,
                   depth: request.max_depth,
+                  provider: request.provider,
+                  model: request.model,
                   timestamp: Date.now(),
                 })
               } else if (data.type === 'error') {

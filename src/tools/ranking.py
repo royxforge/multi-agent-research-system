@@ -60,6 +60,10 @@ def chunk_text(text: str, chunk_size: int = 1000, overlap: int = 100) -> List[st
         chunk = text[start:end]
         chunks.append(chunk)
         start += chunk_size - overlap
+
+    # Trim trailing chunks that are only overlap leftovers (no new content)
+    while len(chunks) > 1 and len(chunks[-1]) <= overlap:
+        chunks.pop()
         
     return chunks
 

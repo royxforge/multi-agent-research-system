@@ -37,6 +37,7 @@ class AgentState(TypedDict, total=False):
     openrouter_api_key: str | None
     model: str | None
     critic_strictness: int
+    uploaded_content: str | None
     documents: List[DocumentPayload]
     draft: str
     critique: CritiquePayload

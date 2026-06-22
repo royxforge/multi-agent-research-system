@@ -3,6 +3,7 @@ import { ResearchForm } from './components/ResearchForm'
 import { ReportView } from './components/ReportView'
 import { LoadingState } from './components/LoadingState'
 import { useResearch } from './hooks/useResearch'
+import type { HistoryItem } from './hooks/useResearch'
 import { TrendingUp, AlertCircle, RefreshCw } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { ErrorBoundary } from './components/ErrorBoundary'
@@ -42,6 +43,8 @@ function App() {
   } = useResearch()
 
   const [selectedTopic, setSelectedTopic] = useState<string>("")
+  const [researchProvider, setResearchProvider] = useState('ollama')
+  const [researchModel, setResearchModel] = useState<string | undefined>(undefined)
   const [passphrase, setPassphrase] = useState('')
   const [hasBiometric, setHasBiometric] = useState(() => hasBiometricCredential())
   const [isUnlocking, setIsUnlocking] = useState(false)
@@ -87,7 +90,7 @@ function App() {
       autoStartedRef.current = true
       setSelectedTopic(topicParam)
       setToast({ message: `Starting research on "${topicParam}"` })
-      handleResearch(topicParam, 3, 10, 'ollama')
+      handleResearch(topicParam, 3, 10, researchProvider)
     }
   }, [searchParams])
 
@@ -232,8 +235,11 @@ function App() {
     strictness?: number,
     encryptedApiKey?: string,
     encryptionIv?: string,
-    encryptionSalt?: string
+    encryptionSalt?: string,
+    uploadedContent?: string
   ) => {
+    setResearchProvider(provider)
+    setResearchModel(model)
     executeResearch({
       topic,
       max_depth: depth,
@@ -247,8 +253,20 @@ function App() {
       encryption_iv: encryptionIv,
       encryption_salt: encryptionSalt,
       encryption_passphrase: passphrase,
+      uploaded_content: uploadedContent,
     })
   }
+
+  // When selecting from history, restore the provider/model used for that research
+  const handleSelectResult = useCallback((item: HistoryItem) => {
+    setCurrentResult(item)
+    if ('provider' in item) {
+      setResearchProvider(item.provider)
+      if ('model' in item && item.model) {
+        setResearchModel(item.model)
+      }
+    }
+  }, [setCurrentResult])
 
   const handleRefreshTrending = useCallback(() => {
     setTrendingTopicsRefreshing(true)
@@ -262,7 +280,7 @@ function App() {
     <div className="flex h-screen bg-warm-50 dark:bg-[#0c0b0a] text-warm-800 dark:text-warm-300 overflow-hidden selection:bg-primary-500 selection:text-white dark:selection:bg-primary-400 dark:selection:text-[#0c0b0a]">
       <Sidebar
         history={history}
-        onSelect={setCurrentResult}
+                        onSelect={handleSelectResult}
         onClear={clearHistory}
         onNewChat={() => setCurrentResult(null)}
         passphrase={passphrase}
@@ -376,7 +394,7 @@ function App() {
                               } else {
                                 setToast({ message: `Starting research on "${topic}"` })
                               }
-                              handleResearch(topic, 3, 10, 'ollama')
+                              handleResearch(topic, 3, 10, researchProvider)
                             }}
                             className="px-3 py-1 text-[11px] text-warm-400 hover:text-warm-700 dark:hover:text-warm-300 glass-card hover:shadow-sm transition-all duration-200"
                           >
@@ -445,7 +463,7 @@ function App() {
                   <LoadingState onStop={stopResearch} />
                 ) : currentResult ? (
                   <ErrorBoundary>
-                    <ReportView data={currentResult} />
+                    <ReportView data={currentResult} provider={researchProvider} model={researchModel} />
                   </ErrorBoundary>
                 ) : null}
               </motion.div>

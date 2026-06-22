@@ -284,7 +284,13 @@ async def draft_node(state: AgentState) -> AgentState:
         top_p=top_p,
     )
 
-    context_sections = _format_sources(documents)
+    # Include user-uploaded content as additional context with distinct [U1] prefix
+    uploaded_content = state.get("uploaded_content")
+    upload_section = ""
+    if uploaded_content:
+        snippet = uploaded_content[:1500]
+        upload_section = f"[U1] Source: User-uploaded document\nContent: {snippet}\n\n"
+    context_sections = upload_section + _format_sources(documents)
     critique_feedback = (state.get("critique") or {}).get("feedback")
     current_draft = state.get("draft")
     

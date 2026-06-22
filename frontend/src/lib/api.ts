@@ -84,3 +84,119 @@ async function safeParseError(response: Response): Promise<string | null> {
     return null
   }
 }
+
+// ── ArXiv DOI Resolution ──
+
+export async function resolveDois(urls: string[]): Promise<Record<string, string | null>> {
+  try {
+    const response = await fetch(`${API_BASE()}/resolve-dois`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(urls),
+    })
+    if (!response.ok) return {}
+    const data = (await response.json()) as { dois: Record<string, string | null> }
+    return data.dois ?? {}
+  } catch {
+    return {}
+  }
+}
+
+// ── PDF Upload ──
+
+export type UploadResult = {
+  filename: string
+  content: string
+  char_count: number
+}
+
+export async function uploadPdf(file: File): Promise<UploadResult> {
+  const formData = new FormData()
+  formData.append('file', file)
+  const response = await fetch(`${API_BASE()}/upload-pdf`, {
+    method: 'POST',
+    body: formData,
+  })
+  if (!response.ok) {
+    const detail = await safeParseError(response)
+    throw new Error(detail ?? 'Failed to upload PDF')
+  }
+  return response.json() as Promise<UploadResult>
+}
+
+// ── Explain / Simplify ──
+
+export async function explainReport(report: string, mode: 'brief' | 'eli5' = 'brief'): Promise<string> {
+  try {
+    const response = await fetch(`${API_BASE()}/explain`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ report, mode }),
+    })
+    if (!response.ok) throw new Error('Explain failed')
+    const data = (await response.json()) as { explanation: string }
+    return data.explanation ?? report
+  } catch {
+    return report
+  }
+}
+
+// ── Research Timeline ──
+
+export type TimelineData = { year: number; label: string }[]
+
+export async function fetchTimeline(report: string, sources: string[]): Promise<TimelineData> {
+  try {
+    const response = await fetch(`${API_BASE()}/timeline`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ report, sources }),
+    })
+    if (!response.ok) return []
+    const data = (await response.json()) as { timeline: TimelineData }
+    return data.timeline ?? []
+  } catch {
+    return []
+  }
+}
+
+// ── Follow-up Chat (non-streaming) ──
+
+export async function chatFollowup(
+  question: string,
+  report: string,
+  sources: string[],
+  provider?: string,
+  model?: string,
+): Promise<string> {
+  try {
+    const response = await fetch(`${API_BASE()}/chat`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ question, report, sources, provider, model }),
+    })
+    if (!response.ok) throw new Error('Chat failed')
+    const data = (await response.json()) as { answer: string }
+    return data.answer ?? 'No response'
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : 'Chat failed'
+    throw new Error(msg)
+  }
+}
+
+// ── Generate HTML for PDF ──
+
+export async function generatePrintHtml(topic: string, report: string, sources: string[]): Promise<string> {
+  try {
+    const response = await fetch(`${API_BASE()}/generate-html`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ topic, report, sources }),
+    })
+    if (!response.ok) throw new Error('HTML generation failed')
+    const data = (await response.json()) as { html: string }
+    return data.html ?? ''
+  } catch {
+    return ''
+  }
+}

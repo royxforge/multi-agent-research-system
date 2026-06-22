@@ -15,6 +15,12 @@ class ResearchRequest(BaseModel):
     model: str | None = Field(default=None, description="Specific model to use (e.g. 'llama3', 'x-ai/grok-4.1-fast')")
     critic_strictness: int = Field(default=5, ge=1, le=10, description="Strictness level of the critic agent (1=Lenient, 10=Strict)")
 
+    # Optional uploaded PDF content for context
+    uploaded_content: str | None = Field(
+        default=None,
+        description="Text content extracted from a user-uploaded PDF, used as additional context for the research.",
+    )
+
     # Zero-knowledge encrypted fields
     encrypted_api_key: str | None = Field(
         default=None,
@@ -36,6 +42,18 @@ class ResearchRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
 
+class ImageResult(BaseModel):
+    """A single image result from a search."""
+
+    title: str = Field(default="", description="Image title or alt text")
+    image_url: str = Field(description="Direct URL to the image")
+    thumbnail_url: str | None = Field(default=None, description="Thumbnail URL")
+    source_url: str = Field(default="", description="URL of the page containing the image")
+    source_domain: str = Field(default="", description="Source domain name")
+    width: int | None = Field(default=None, description="Image width in pixels")
+    height: int | None = Field(default=None, description="Image height in pixels")
+
+
 class ResearchResponse(BaseModel):
     """Successful research result envelope."""
 
@@ -43,3 +61,5 @@ class ResearchResponse(BaseModel):
     sources: list[str] = Field(default_factory=list, description="List of source URLs cited in the review")
     topic: str = Field(description="The original research topic")
     graph_data: dict | None = Field(default=None, description="Citation graph data for visualization")
+    images: list[ImageResult] = Field(default_factory=list, description="Related images for the research topic")
+    graphs: list[ImageResult] = Field(default_factory=list, description="Related charts and data visualizations for the topic")
