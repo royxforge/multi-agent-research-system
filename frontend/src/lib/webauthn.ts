@@ -12,9 +12,9 @@
 
 import { arrayBufferToBase64, base64ToArrayBuffer } from './crypto'
 
-const PRF_SALT = new TextEncoder().encode('auto-researcher-passphrase-unlock-v1')
+const PRF_SALT = new TextEncoder().encode('multi-agent-research-system-passphrase-unlock-v1')
 
-const RP_NAME = 'Auto Researcher'
+const RP_NAME = 'Multi-Agent Research System'
 
 /**
  * Check whether the browser + platform authenticator supports the PRF extension.

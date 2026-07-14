@@ -118,7 +118,7 @@ export async function deriveKeyFromIKM(
     {
       name: 'HKDF',
       hash: 'SHA-256',
-      salt: new TextEncoder().encode('AutoResearcher-v1'),
+      salt: new TextEncoder().encode('MultiAgentResearchSystem-v1'),
       info: new TextEncoder().encode(info),
     },
     hkdfKey,

@@ -14,7 +14,7 @@ from src.config import get_settings
 
 logger = structlog.get_logger(__name__)
 
-USER_AGENT = "Auto-Researcher/1.0"
+USER_AGENT = "Multi-Agent-Research-System/1.0"
 REFERENCE_MARKERS = ("references", "bibliography", "acknowledgements")
 
 

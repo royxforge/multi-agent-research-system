@@ -1,4 +1,4 @@
-# Auto-Researcher Frontend
+# Multi-Agent Research System Frontend
 
 A lightweight Vite + React interface that talks to the FastAPI backend exposed at `/research`. Use it to submit research prompts, monitor workflow progress, and review the generated draft plus cited sources.
 

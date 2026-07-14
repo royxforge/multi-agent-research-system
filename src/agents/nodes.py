@@ -123,7 +123,7 @@ def _get_llm(
     extra_headers = {}
     if provider == "openrouter":
         extra_headers["HTTP-Referer"] = "http://localhost:5173"
-        extra_headers["X-Title"] = "Auto-Researcher"
+        extra_headers["X-Title"] = "Multi-Agent Research System"
     
     return ChatOpenAI(
         model=resolved_model,

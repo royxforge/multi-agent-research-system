@@ -2,7 +2,7 @@ import type { ResearchRequest, ResearchResponse } from '../types'
 
 const API_BASE = () => (import.meta.env.VITE_API_BASE_URL as string | undefined) ?? 'http://localhost:8000'
 
-const TRENDING_CACHE_KEY = 'auto-researcher-trending-topics'
+const TRENDING_CACHE_KEY = 'multi-agent-research-system-trending-topics'
 
 function loadTrendingCache(): string[] | null {
   try {

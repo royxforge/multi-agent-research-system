@@ -410,7 +410,7 @@ function App() {
                     onClick={() => navigate('/')}
                     className="mt-10 text-[11px] text-warm-400 hover:text-primary-500 dark:hover:text-primary-400 transition-colors flex items-center gap-1"
                   >
-                    Learn more about Auto-Researcher
+                    Learn more about Multi-Agent Research System
                   </button>
                 </div>
               </motion.div>

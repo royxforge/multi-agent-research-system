@@ -65,7 +65,7 @@ def _safe_log_request(request: ResearchRequest) -> dict:
     }
 
 
-app = FastAPI(title="Auto-Researcher", version="0.2.0")
+app = FastAPI(title="Multi-Agent Research System", version="0.2.0")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[settings.frontend_origin],
