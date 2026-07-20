@@ -25,7 +25,7 @@
 ## 2026-07-20 - Community Health Files
 
 **Commit:** Not yet committed  
-**Author:** Sourav Roy ([royxforge@proton.me](mailto:royxforge@proton.me))
+**Author:** Sourav Roy ([royxforge@gmail.com](mailto:royxforge@gmail.com))
 
 ### Summary
 
@@ -43,7 +43,7 @@ Added community health and governance files to standardize contribution workflow
 ## 2026-07-14 - Documentation Restructuring
 
 **Commit:** [`4c0fc0e`](https://github.com/royxforge/multi-agent-research-system/commit/4c0fc0e)  
-**Author:** Sourav Roy ([royxforge@proton.me](mailto:royxforge@proton.me))
+**Author:** Sourav Roy ([royxforge@gmail.com](mailto:royxforge@gmail.com))
 
 ### Summary
 
@@ -82,7 +82,7 @@ A comprehensive documentation consolidation and restructuring pass. The README w
 ## 2026-06-22 - Benchmark Suite & Uploaded Content Integration
 
 **Commit:** [`052057c`](https://github.com/royxforge/multi-agent-research-system/commit/052057c)  
-**Author:** Sourav Roy ([royxforge@proton.me](mailto:royxforge@proton.me))
+**Author:** Sourav Roy ([royxforge@gmail.com](mailto:royxforge@gmail.com))
 
 ### Summary
 
@@ -141,7 +141,7 @@ Introduced an entirely new `benchmark/` directory containing a modular, paramete
 ## 2026-05-26 - Documentation & Examples (Revision)
 
 **Commit:** [`9c1de52`](https://github.com/royxforge/multi-agent-research-system/commit/9c1de52)  
-**Author:** Sourav Roy ([royxforge@proton.me](mailto:royxforge@proton.me))
+**Author:** Sourav Roy ([royxforge@gmail.com](mailto:royxforge@gmail.com))
 
 ### Summary
 
@@ -159,7 +159,7 @@ A comprehensive documentation update pass: `.env.example` added with all support
 ## 2026-05-26 - Contribution Guidelines & Documentation Enhancement
 
 **Commit:** [`033ac4c`](https://github.com/royxforge/multi-agent-research-system/commit/033ac4c)  
-**Author:** Sourav Roy ([royxforge@proton.me](mailto:royxforge@proton.me))
+**Author:** Sourav Roy ([royxforge@gmail.com](mailto:royxforge@gmail.com))
 
 ### Summary
 
@@ -176,7 +176,7 @@ Introduced formal contribution guidelines and enhanced the README with a changel
 ## 2026-05-26 - README Asset Restructuring
 
 **Commit:** [`1316101`](https://github.com/royxforge/multi-agent-research-system/commit/1316101)  
-**Author:** Sourav Roy ([royxforge@proton.me](mailto:royxforge@proton.me))
+**Author:** Sourav Roy ([royxforge@gmail.com](mailto:royxforge@gmail.com))
 
 ### Summary
 
@@ -196,7 +196,7 @@ README content expansion with new feature documentation, asset image restructuri
 ## 2026-05-26 - Brand Identity & Theme Integration
 
 **Commit:** [`e33bc05`](https://github.com/royxforge/multi-agent-research-system/commit/e33bc05)  
-**Author:** Sourav Roy ([royxforge@proton.me](mailto:royxforge@proton.me))
+**Author:** Sourav Roy ([royxforge@gmail.com](mailto:royxforge@gmail.com))
 
 ### Summary
 
@@ -231,7 +231,7 @@ Introduced a scalable brand icon component, integrated theme-aware color mapping
 ## 2026-05-26 - Welcome Page & Example Report
 
 **Commit:** [`4d209c0`](https://github.com/royxforge/multi-agent-research-system/commit/4d209c0)  
-**Author:** Sourav Roy ([royxforge@proton.me](mailto:royxforge@proton.me))
+**Author:** Sourav Roy ([royxforge@gmail.com](mailto:royxforge@gmail.com))
 
 ### Summary
 
@@ -271,7 +271,7 @@ Introduced a marketing-oriented landing page with interactive metrics, an exampl
 ## 2026-05-26 - General Improvements
 
 **Commit:** [`5540d6c`](https://github.com/royxforge/multi-agent-research-system/commit/5540d6c)  
-**Author:** Sourav Roy ([royxforge@proton.me](mailto:royxforge@proton.me))
+**Author:** Sourav Roy ([royxforge@gmail.com](mailto:royxforge@gmail.com))
 
 ### Summary
 
@@ -322,7 +322,7 @@ A substantial refactoring and feature addition release: 43 files changed, 2,669 
 ## 2025-11-30 - Test Suite Expansion
 
 **Commit:** [`aba1e77`](https://github.com/royxforge/multi-agent-research-system/commit/aba1e77)  
-**Author:** Sourav Roy ([royxforge@proton.me](mailto:royxforge@proton.me))
+**Author:** Sourav Roy ([royxforge@gmail.com](mailto:royxforge@gmail.com))
 
 ### Summary
 
@@ -371,7 +371,7 @@ Added comprehensive unit and integration tests for the core pipeline components:
 ## 2025-11-26 - Strictness Parameter & Streaming Research
 
 **Commit:** [`5f4752c`](https://github.com/royxforge/multi-agent-research-system/commit/5f4752c)  
-**Author:** Sourav Roy ([royxforge@proton.me](mailto:royxforge@proton.me))
+**Author:** Sourav Roy ([royxforge@gmail.com](mailto:royxforge@gmail.com))
 
 ### Summary
 
@@ -413,7 +413,7 @@ Introduced the configurable critic strictness parameter, the interactive knowled
 ## 2025-11-25 - Initial Commit
 
 **Commit:** [`f7361a5`](https://github.com/royxforge/multi-agent-research-system/commit/f7361a5)  
-**Author:** Sourav Roy ([royxforge@proton.me](mailto:royxforge@proton.me))
+**Author:** Sourav Roy ([royxforge@gmail.com](mailto:royxforge@gmail.com))
 
 ### Summary
 
