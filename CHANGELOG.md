@@ -8,6 +8,8 @@
 
 ## Table of Contents
 
+- [2026-07-20 - Repository Migration & Remote URL Update](#2026-07-20--repository-migration--remote-url-update)
+- [2026-07-20 - Community Health Files](#2026-07-20--community-health-files)
 - [2026-07-14 - Documentation Restructuring](#2026-07-14--documentation-restructuring)
 - [2026-06-22 - Benchmark Suite & Uploaded Content Integration](#2026-06-22--benchmark-suite--uploaded-content-integration)
 - [2026-05-26 - Documentation & Examples (Revision)](#2026-05-26--documentation--examples-revision)
@@ -19,6 +21,21 @@
 - [2025-11-30 - Test Suite Expansion](#2025-11-30--test-suite-expansion)
 - [2025-11-26 - Strictness Parameter & Streaming Research](#2025-11-26--strictness-parameter--streaming-research)
 - [2025-11-25 - Initial Commit](#2025-11-25--initial-commit)
+
+---
+
+## 2026-07-20 - Repository Migration & Remote URL Update
+
+**Commit:** Not yet committed  
+**Author:** Sourav Roy ([royxforge@gmail.com](mailto:royxforge@gmail.com))
+
+### Summary
+
+Updated the Git remote URL from `royxlead` to `royxforge` to reflect the permanent repository home under the royxforge GitHub organization.
+
+### Changed
+
+- **Git remote origin**: Updated from `https://github.com/royxlead/auto-researcher-python.git` to `https://github.com/royxforge/multi-agent-research-system.git` to align with the canonical repository location.
 
 ---
 
