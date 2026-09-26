@@ -29,7 +29,7 @@
 ### Security
 
 - **LLM cache**: the `@lru_cache`d `_get_llm` no longer includes `api_key` in its cache key (secrets were embedded in cache keys and allowed cross-key poisoning).
-- **PDF fetching**: SSRF and resource guards before processing remote documents — scheme/host allowlist, `max_bytes` cap, shared `ClientSession`, and non-exception results filtered out of `asyncio.gather`.
+- **PDF fetching**: SSRF and resource guards before processing remote documents -- scheme/host allowlist, `max_bytes` cap, shared `ClientSession`, and non-exception results filtered out of `asyncio.gather`.
 - **Report export**: markdown-rendered HTML is sanitised (`bleach`/`nh3` with an allow-listed tag set) and topic/source strings are HTML-escaped; `markdown>=3.6`, `bleach`, and `defusedxml` added to `requirements.txt`.
 - **Trace crypto**: `encrypt_trace_data` honours the supplied `encryption_salt` (previously ignored and replaced with a random salt, so traces could not be decrypted with the configured salt).
 
