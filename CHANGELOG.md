@@ -41,7 +41,15 @@
 
 ---
 
-## Unreleased
+## Unreleased / In Development
+
+The following capabilities are under active investigation or development and have not yet been incorporated into a formal release:
+
+- Alternative indexing structures (e.g., approximate nearest neighbor) for document ranking at scales exceeding 1,000 sources
+- Additional LLM provider integrations beyond the current 11 supported engines
+- Enhanced knowledge graph interactivity and filtering controls
+- Expanded benchmark coverage for LLM-dependent pipeline stages
+- Performance optimization for knowledge graph construction at scale
 
 ---
 
@@ -540,19 +548,3 @@ Repository inception. The complete foundational codebase was committed, establis
 - **`assets/ProcessingScreen.png`** - Processing visualization screenshot.
 
 ---
-
-## Unreleased / In Development
-
-The following capabilities are under active investigation or development and have not yet been incorporated into a formal release:
-
-- Alternative indexing structures (e.g., approximate nearest neighbor) for document ranking at scales exceeding 1,000 sources
-- Additional LLM provider integrations beyond the current 11 supported engines
-- Enhanced knowledge graph interactivity and filtering controls
-- Expanded benchmark coverage for LLM-dependent pipeline stages
-- Performance optimization for knowledge graph construction at scale
-
----
-
-<p align="center">
-  <sub>Maintained by <a href="https://github.com/royxforge">Sourav Roy</a> · Multi-Agent Research System</sub>
-</p>
