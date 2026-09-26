@@ -24,7 +24,7 @@
 
 ---
 
-## Unreleased
+## [0.2.0] - 2026-09-26
 
 ### Security
 
@@ -38,6 +38,10 @@
 - **DOI resolver**: HTTPS arXiv endpoint, `defusedxml` parsing (XXE), bounded `DOI_CACHE` (1000 entries), validated arXiv ID format, and batch resolution capped at 5 concurrent requests.
 - **Factual-consistency checker**: numeric claims must appear within a +/-40-char window sharing a significant token with their claim sentence; the previous bare substring check passed any number appearing *anywhere* in the sources (e.g. "2024" in an unrelated sentence).
 - **Hallucination detector**: parses the LLM's JSON reply into `{hallucinations, score}`; unparseable replies return an explicit `parse_error` payload instead of `{"raw_response": ...}`.
+
+---
+
+## Unreleased
 
 ---
 
