@@ -57,14 +57,19 @@ def decrypt_api_key(
 def encrypt_trace_data(
     plaintext: str,
     passphrase: str,
+    salt: bytes | None = None,
 ) -> Tuple[str, str]:
     """
     Encrypt trace data (prompts, responses, reports) for storage at rest.
 
     Returns (ciphertext_b64, salt_b64).
     The IV is prepended to the ciphertext and extracted on decrypt.
+    When ``salt`` is provided (e.g. the session ``encryption_salt``), it is
+    reused so decryption with the session salt succeeds; otherwise a fresh
+    random salt is generated.
     """
-    salt = os.urandom(SALT_LENGTH)
+    if salt is None:
+        salt = os.urandom(SALT_LENGTH)
     iv = os.urandom(IV_LENGTH)
     key = _derive_key(passphrase, salt)
 

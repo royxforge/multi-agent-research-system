@@ -76,28 +76,29 @@ PROVIDER_CONFIG: dict[str, dict[str, str]] = {
 
 
 @lru_cache(maxsize=2)
-def _get_llm(
+def _get_cached_llm_config(
     provider: str = "ollama", 
     model: str | None = None, 
-    base_url: str | None = None, 
-    api_key: str | None = None,
+    base_url: str | None = None,
     temperature: float = 0.2,
     seed: int | None = None,
     top_p: float | None = None
 ) -> Any:
+    """Resolve non-secret LLM config (cached); api_key is never cached."""
     settings = get_settings()
-    
+
     # Ollama uses LangChain's ChatOllama directly
     if provider == "ollama":
         resolved_model = model or settings.ollama_model
         resolved_base = base_url or settings.ollama_base_url
-        return ChatOllama(
-            model=resolved_model,
-            base_url=resolved_base,
-            temperature=temperature,
-            top_p=top_p,
-            seed=seed
-        )
+        return {
+            "client": "ollama",
+            "model": resolved_model,
+            "base_url": resolved_base,
+            "temperature": temperature,
+            "top_p": top_p,
+            "seed": seed,
+        }
     
     # For all other providers, use OpenAI-compatible ChatOpenAI
     config = PROVIDER_CONFIG.get(provider)
@@ -106,12 +107,6 @@ def _get_llm(
     
     prefix = config["config_prefix"]
     resolved_model = model or getattr(settings, f"{prefix}_model", None) or config["default_model"]
-    
-    # Resolve API key: passed in, or from settings, or raise for cloud providers
-    resolved_key = api_key or getattr(settings, f"{prefix}_api_key", None)
-    if not resolved_key and provider != "ollama":
-        raise ValueError(f"API key is required for {provider}. Set {prefix.upper()}_API_KEY or pass it in the request.")
-    
     resolved_base = base_url or config["base_url"]
     
     model_kwargs = {}
@@ -125,14 +120,71 @@ def _get_llm(
         extra_headers["HTTP-Referer"] = "http://localhost:5173"
         extra_headers["X-Title"] = "Multi-Agent Research System"
     
-    return ChatOpenAI(
-        model=resolved_model,
-        api_key=resolved_key,
-        base_url=resolved_base,
-        temperature=temperature,
-        model_kwargs=model_kwargs or None,
-        default_headers=extra_headers or None
-    )
+    return {
+        "client": "openai",
+        "model": resolved_model,
+        "base_url": resolved_base,
+        "temperature": temperature,
+        "model_kwargs": model_kwargs or None,
+        "extra_headers": extra_headers or None,
+    }
+
+
+def _get_llm(
+    provider: str = "ollama",
+    model: str | None = None,
+    base_url: str | None = None,
+    api_key: str | None = None,
+    temperature: float = 0.2,
+    seed: int | None = None,
+    top_p: float | None = None,
+) -> Any:
+    """Build an LLM client that is never cached with its ``api_key``.
+
+    ``api_key`` is bound directly to the returned client and the local
+    reference is dropped before returning (best-effort; the client keeps
+    its own copy).
+    """
+    try:
+        resolved = _get_cached_llm_config(
+            provider=provider,
+            model=model,
+            base_url=base_url,
+            temperature=temperature,
+            seed=seed,
+            top_p=top_p,
+        )
+        if resolved["client"] == "ollama":
+            return ChatOllama(
+                model=resolved["model"],
+                base_url=resolved["base_url"],
+                temperature=resolved["temperature"],
+                top_p=resolved["top_p"],
+                seed=resolved["seed"],
+            )
+        settings = get_settings()
+        prefix = PROVIDER_CONFIG[provider]["config_prefix"]
+        resolved_key = api_key or getattr(settings, f"{prefix}_api_key", None)
+        if not resolved_key:
+            raise ValueError(
+                f"API key is required for {provider}. "
+                f"Set {prefix.upper()}_API_KEY or pass it in the request."
+            )
+        client_kwargs: dict[str, Any] = {
+            "model": resolved["model"],
+            "api_key": resolved_key,
+            "base_url": resolved["base_url"],
+            "temperature": resolved["temperature"],
+        }
+        # Only pass optional kwargs when set: langchain-core >=1 rejects
+        # ``model_kwargs=None`` / ``default_headers=None``.
+        if resolved["model_kwargs"]:
+            client_kwargs["model_kwargs"] = resolved["model_kwargs"]
+        if resolved["extra_headers"]:
+            client_kwargs["default_headers"] = resolved["extra_headers"]
+        return ChatOpenAI(**client_kwargs)
+    finally:
+        del api_key
 
 
 async def research_node(state: AgentState) -> AgentState:
@@ -283,6 +335,10 @@ async def draft_node(state: AgentState) -> AgentState:
         temperature=temperature,
         top_p=top_p,
     )
+    # Drop local references to the decrypted key (best-effort, matching the
+    # passphrase handling above; the client built above holds its own copy).
+    resolved_api_key = None
+    api_key = None
 
     # Include user-uploaded content as additional context with distinct [U1] prefix
     uploaded_content = state.get("uploaded_content")
@@ -431,6 +487,8 @@ async def critique_node(state: AgentState) -> AgentState:
         temperature=temperature,
         top_p=top_p,
     )
+    resolved_api_key = None
+    api_key = None
     context = _format_sources(documents)
 
     # Run validation tools

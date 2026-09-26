@@ -24,6 +24,23 @@
 
 ---
 
+## Unreleased
+
+### Security
+
+- **LLM cache**: the `@lru_cache`d `_get_llm` no longer includes `api_key` in its cache key (secrets were embedded in cache keys and allowed cross-key poisoning).
+- **PDF fetching**: SSRF and resource guards before processing remote documents — scheme/host allowlist, `max_bytes` cap, shared `ClientSession`, and non-exception results filtered out of `asyncio.gather`.
+- **Report export**: markdown-rendered HTML is sanitised (`bleach`/`nh3` with an allow-listed tag set) and topic/source strings are HTML-escaped; `markdown>=3.6`, `bleach`, and `defusedxml` added to `requirements.txt`.
+- **Trace crypto**: `encrypt_trace_data` honours the supplied `encryption_salt` (previously ignored and replaced with a random salt, so traces could not be decrypted with the configured salt).
+
+### Fixed
+
+- **DOI resolver**: HTTPS arXiv endpoint, `defusedxml` parsing (XXE), bounded `DOI_CACHE` (1000 entries), validated arXiv ID format, and batch resolution capped at 5 concurrent requests.
+- **Factual-consistency checker**: numeric claims must appear within a +/-40-char window sharing a significant token with their claim sentence; the previous bare substring check passed any number appearing *anywhere* in the sources (e.g. "2024" in an unrelated sentence).
+- **Hallucination detector**: parses the LLM's JSON reply into `{hallucinations, score}`; unparseable replies return an explicit `parse_error` payload instead of `{"raw_response": ...}`.
+
+---
+
 ## 2026-07-20 - Repository Migration & Remote URL Update
 
 **Commit:** Not yet committed  

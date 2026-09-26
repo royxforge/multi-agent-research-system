@@ -13,6 +13,17 @@ from src.utils.crypto import encrypt_trace_data
 logger = structlog.get_logger(__name__)
 
 
+def _decode_salt(salt_b64: str | None) -> bytes | None:
+    if not salt_b64:
+        return None
+    try:
+        import base64
+
+        return base64.b64decode(salt_b64)
+    except Exception:
+        return None
+
+
 class TraceLogger:
     """Logs LLM calls, graph executions, and metadata to disk.
 
@@ -40,7 +51,7 @@ class TraceLogger:
             # Encrypt the JSON-serialized data
             plaintext = json.dumps(data, indent=2)
             encrypted_b64, salt_b64 = encrypt_trace_data(
-                plaintext, self.encryption_passphrase
+                plaintext, self.encryption_passphrase, salt=_decode_salt(self.encryption_salt)
             )
             encrypted_payload = {
                 "encrypted": encrypted_b64,

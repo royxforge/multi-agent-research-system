@@ -65,6 +65,40 @@ def _safe_log_request(request: ResearchRequest) -> dict:
     }
 
 
+_ALLOWED_HTML_TAGS = frozenset(
+    {
+        "h1", "h2", "h3", "h4", "p", "ul", "ol", "li", "strong", "em",
+        "code", "pre", "blockquote", "table", "thead", "tbody", "tr",
+        "th", "td", "a", "hr", "br",
+    }
+)
+_ALLOWED_HTML_ATTRS = {"a": ["href", "title"]}
+
+
+def _sanitize_html_body(html_body: str) -> str:
+    """Strip unsafe markup from markdown-rendered HTML (bleach/nh3, else escape)."""
+    try:
+        import bleach
+
+        return bleach.clean(
+            html_body,
+            tags=_ALLOWED_HTML_TAGS,
+            attributes=_ALLOWED_HTML_ATTRS,
+            strip=True,
+        )
+    except ImportError:
+        pass
+    try:
+        import nh3  # type: ignore
+
+        return nh3.clean(html_body, tags=_ALLOWED_HTML_TAGS, attributes=_ALLOWED_HTML_ATTRS)
+    except ImportError:
+        pass
+    import html as html_lib
+
+    return html_lib.escape(html_body)
+
+
 app = FastAPI(title="Multi-Agent Research System", version="0.2.0")
 app.add_middleware(
     CORSMiddleware,
@@ -548,12 +582,17 @@ class PdfRequest(BaseModel):
 @app.post("/generate-html")
 async def generate_html(request: PdfRequest):
     """Generate styled HTML from a report for PDF printing."""
+    import html as html_lib
+
     import markdown
     html_body = markdown.markdown(request.report, extensions=["extra", "codehilite"])
-    sources_html = "<ul>" + "".join(f"<li>{s}</li>" for s in request.sources[:20]) + "</ul>"
+    html_body = _sanitize_html_body(html_body)
+    safe_topic = html_lib.escape(request.topic)
+    safe_sources = "".join(f"<li>{html_lib.escape(s)}</li>" for s in request.sources[:20])
+    sources_html = f"<ul>{safe_sources}</ul>"
     html = f"""<!DOCTYPE html>
 <html>
-<head><meta charset="utf-8"><title>{request.topic}</title>
+<head><meta charset="utf-8"><title>{safe_topic}</title>
 <style>
 body {{ font-family: 'Times New Roman', Georgia, serif; font-size: 12pt; line-height: 1.6; max-width: 800px; margin: 0 auto; padding: 40px; color: #222; }}
 h1 {{ font-size: 22pt; margin-bottom: 5px; }}
@@ -571,7 +610,7 @@ blockquote {{ border-left: 3px solid #999; padding-left: 15px; color: #555; }}
 @media print {{ body {{ padding: 0; }} }}
 </style></head>
 <body>
-<h1>{request.topic}</h1>
+<h1>{safe_topic}</h1>
 {html_body}
 <div class="sources"><h2>Sources</h2>{sources_html}</div>
 </body>
