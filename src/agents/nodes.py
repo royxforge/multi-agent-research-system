@@ -3,7 +3,7 @@ from __future__ import annotations
 import asyncio
 import json
 import time
-from datetime import datetime
+from datetime import datetime, timezone
 from functools import lru_cache
 from typing import Any, List
 
@@ -197,7 +197,7 @@ async def research_node(state: AgentState) -> AgentState:
     if not metadata:
         metadata = {
             "job_id": job_id,
-            "start_time": datetime.utcnow().isoformat(),
+            "start_time": datetime.now(timezone.utc).isoformat(),
             "model": state.get("model", "unknown"),
             "provider": state.get("provider", "unknown"),
             "retrieval_stats": {},
@@ -292,8 +292,8 @@ async def draft_node(state: AgentState) -> AgentState:
     print(f"\n--- [2/3] Drafting Review (Revision {revisions}) ---")
     logger.info("node.draft.start", revisions=revisions)
     documents = state.get("documents", [])
-    if not documents:
-        raise ValueError("Draft node requires at least one document")
+    if not documents and not state.get("uploaded_content"):
+        raise ValueError("Draft node requires at least one document or uploaded content")
 
     settings = get_settings()
     provider = state.get("provider", "ollama")

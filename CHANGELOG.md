@@ -8,6 +8,7 @@
 
 ## Table of Contents
 
+- [2026-10-12 - Upload Pipeline & Test Fixes](#2026-10-12--upload-pipeline--test-fixes)
 - [2026-07-20 - Repository Migration & Remote URL Update](#2026-07-20--repository-migration--remote-url-update)
 - [2026-07-20 - Community Health Files](#2026-07-20--community-health-files)
 - [2026-07-14 - Documentation Restructuring](#2026-07-14--documentation-restructuring)
@@ -50,6 +51,20 @@ The following capabilities are under active investigation or development and hav
 - Enhanced knowledge graph interactivity and filtering controls
 - Expanded benchmark coverage for LLM-dependent pipeline stages
 - Performance optimization for knowledge graph construction at scale
+
+---
+
+## 2026-10-12 - Upload Pipeline & Test Fixes
+
+**Author:** Sourav Roy ([royxforge@gmail.com](mailto:royxforge@gmail.com))
+
+### Fixed
+
+- **Upload-only drafting**: `draft_node` aborted with "requires at least one document" when a run had an uploaded PDF but no web sources; uploaded content now counts as a valid source.
+- **Upload endpoint errors**: `POST /upload-pdf` returns `400` (not `422`) for an empty filename or a zero-byte file, and the handler owns its filename/empty-file validation; a duplicate `fastapi` import was removed.
+- **Retrieval evaluator type import**: `src/evaluation/retrieval.py` annotated with `Any` without importing it (a `NameError` before Python 3.14).
+- **Timestamps**: `datetime.utcnow()` (deprecated, scheduled for removal) replaced with `datetime.now(timezone.utc)`.
+- **Upload integration tests**: the PDF fixture now generates documents that clear the extractor's minimum-text validation, so the concurrency and round-trip tests exercise real uploads.
 
 ---
 

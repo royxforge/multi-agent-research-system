@@ -26,11 +26,20 @@ from src.agents.state import AgentState
 # -- Test helper: create a minimal valid PDF with text -----------------------
 
 def _make_test_pdf(text: str) -> bytes:
-    """Create a minimal valid PDF containing the given text using PyMuPDF."""
+    """Create a minimal valid PDF containing the given text using PyMuPDF.
+
+    The text is padded with filler so the extracted content clears the PDF
+    processor's minimum-length and alphanumeric-density validation, while the
+    original ``text`` is still present as a substring.
+    """
     import fitz  # type: ignore[import-untyped]
+    filler = " sample document body used to validate pdf text extraction."
+    body = text
+    while len(body.strip()) < 60:
+        body += filler
     doc = fitz.open()
     page = doc.new_page()
-    page.insert_text((72, 72), text, fontsize=11)
+    page.insert_text((72, 72), body, fontsize=11)
     data = doc.tobytes()
     doc.close()
     return data

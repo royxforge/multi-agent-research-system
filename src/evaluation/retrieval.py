@@ -1,7 +1,7 @@
-from typing import List, Dict
+from typing import Any, Dict, List
 import json
 import os
-from datetime import datetime
+from datetime import datetime, timezone
 
 from src.tools.search import search_papers
 
@@ -30,7 +30,7 @@ def evaluate_retrieval(query: str, expected_urls: List[str], k: int = 10) -> Dic
         "found_count": len(found_set),
         "hits": hits,
         "recall_at_k": recall,
-        "timestamp": datetime.utcnow().isoformat()
+        "timestamp": datetime.now(timezone.utc).isoformat()
     }
     
     _save_metrics(metrics)
@@ -38,6 +38,6 @@ def evaluate_retrieval(query: str, expected_urls: List[str], k: int = 10) -> Dic
 
 def _save_metrics(metrics: Dict[str, Any]):
     os.makedirs("storage/metrics", exist_ok=True)
-    filename = f"storage/metrics/retrieval_{int(datetime.utcnow().timestamp())}.json"
+    filename = f"storage/metrics/retrieval_{int(datetime.now(timezone.utc).timestamp())}.json"
     with open(filename, "w") as f:
         json.dump(metrics, f, indent=2)

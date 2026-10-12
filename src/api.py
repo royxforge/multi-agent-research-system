@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, File, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 import structlog
@@ -9,14 +9,13 @@ import asyncio
 import re
 import time
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 
 import aiohttp
 import xml.etree.ElementTree as ET
 from collections import Counter
 
 from pydantic import BaseModel
-from fastapi import FastAPI, HTTPException, UploadFile, File
 from src.agents.graph import build_research_graph
 from src.agents.state import AgentState
 from src.config import configure_logging, get_settings
@@ -242,7 +241,7 @@ async def run_research_stream(request: ResearchRequest):
         "top_p": settings.default_top_p,
         "metadata": {
             "job_id": job_id,
-            "start_time": datetime.utcnow().isoformat(),
+            "start_time": datetime.now(timezone.utc).isoformat(),
             "model": request.model or "default",
             "provider": request.provider,
             "retrieval_stats": {},
@@ -291,7 +290,7 @@ async def run_research_stream(request: ResearchRequest):
 
             # Update end time in metadata
             metadata = final_state.get("metadata", {})
-            metadata["end_time"] = datetime.utcnow().isoformat()
+            metadata["end_time"] = datetime.now(timezone.utc).isoformat()
             tracer.save_metadata(metadata)
             
             if not draft:
@@ -379,7 +378,7 @@ async def run_research(request: ResearchRequest) -> ResearchResponse:
         "top_p": settings.default_top_p,
         "metadata": {
             "job_id": job_id,
-            "start_time": datetime.utcnow().isoformat(),
+            "start_time": datetime.now(timezone.utc).isoformat(),
             "model": request.model or "default",
             "provider": request.provider,
             "retrieval_stats": {},
@@ -403,7 +402,7 @@ async def run_research(request: ResearchRequest) -> ResearchResponse:
 
         # Update end time in metadata
         metadata = result.get("metadata", {})
-        metadata["end_time"] = datetime.utcnow().isoformat()
+        metadata["end_time"] = datetime.now(timezone.utc).isoformat()
         tracer.save_metadata(metadata)
 
     except Exception as exc:
@@ -475,13 +474,15 @@ async def resolve_dois(urls: list[str]):
 # ── Feature: File Upload & Analysis ────────────────────────────────
 
 @app.post("/upload-pdf")
-async def upload_pdf(file: UploadFile = File(...)):
+async def upload_pdf(file: UploadFile | None = File(None)):
     """Upload a PDF file and extract its text content."""
-    if not file.filename or not file.filename.lower().endswith(".pdf"):
+    if file is None or not file.filename or not file.filename.lower().endswith(".pdf"):
         raise HTTPException(status_code=400, detail="Only PDF files are accepted")
 
     try:
         raw_bytes = await file.read()
+        if not raw_bytes:
+            raise HTTPException(status_code=400, detail="Uploaded file is empty")
         if len(raw_bytes) > 50 * 1024 * 1024:  # 50MB limit
             raise HTTPException(status_code=413, detail="File too large (max 50MB)")
 

@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 import os
 import time
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
 import structlog
@@ -57,7 +57,7 @@ class TraceLogger:
                 "encrypted": encrypted_b64,
                 "salt": salt_b64,
                 "encryption": "AES-256-GCM+PBKDF2",
-                "encrypted_at": datetime.utcnow().isoformat(),
+                "encrypted_at": datetime.now(timezone.utc).isoformat(),
             }
             with open(filename, "w") as f:
                 json.dump(encrypted_payload, f, indent=2)
@@ -75,7 +75,7 @@ class TraceLogger:
         duration: float,
     ):
         trace_entry = {
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
             "step": step,
             "model": model,
             "prompt": prompt,
