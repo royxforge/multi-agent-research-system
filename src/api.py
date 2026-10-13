@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from fastapi import FastAPI, File, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import StreamingResponse
+from fastapi.responses import JSONResponse, StreamingResponse
 import structlog
 import json
 import asyncio
@@ -98,7 +98,7 @@ def _sanitize_html_body(html_body: str) -> str:
     return html_lib.escape(html_body)
 
 
-app = FastAPI(title="Multi-Agent Research System", version="0.2.0")
+app = FastAPI(title="Multi-Agent Research System", version="0.4.0")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[settings.frontend_origin],
@@ -195,6 +195,70 @@ async def _fetch_trending_topics() -> list[str]:
     except Exception as exc:
         logger.warning("trending.fetch_failed", error=str(exc))
         return []
+
+
+# Providers whose presence is decided purely by an environment credential.
+_PROVIDER_KEY_FIELDS = {
+    "ollama": None,
+    "openrouter": "openrouter_api_key",
+    "openai": "openai_api_key",
+    "anthropic": "anthropic_api_key",
+    "google": "google_api_key",
+    "perplexity": "perplexity_api_key",
+    "groq": "groq_api_key",
+    "together": "together_api_key",
+    "deepseek": "deepseek_api_key",
+    "mistral": "mistral_api_key",
+}
+
+
+async def _ollama_reachable(timeout: float = 2.0) -> bool:
+    """Best-effort reachability probe for the configured Ollama server."""
+    try:
+        async with aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=timeout)) as session:
+            async with session.get(f"{settings.ollama_base_url}/api/tags") as resp:
+                return resp.status == 200
+    except Exception:
+        return False
+
+
+@app.get("/health")
+async def health(probe: bool = False) -> dict:
+    """Liveness + readiness probe for orchestrators, load balancers and the UI.
+
+    Fast by default (no network I/O). Pass ``?probe=true`` to additionally
+    verify that the default LLM backend is reachable - a missing model server
+    is the most common cause of failing research jobs, and without this probe
+    an otherwise healthy process reports OK while every job times out.
+    """
+    configured = {"ollama": True}  # local server, no credentials required
+    for name, key_field in _PROVIDER_KEY_FIELDS.items():
+        if name != "ollama":
+            configured[name] = bool(key_field and getattr(settings, key_field, None))
+
+    llm: dict[str, object] = {"configured": configured}
+    if probe:
+        llm["ollama_reachable"] = await _ollama_reachable()
+
+    graph_loaded = app.state.graph is not None
+    # Without a probe we only know which backends are configured; ollama is the
+    # default and always counts as usable until proven otherwise.
+    healthy = graph_loaded and (configured["ollama"] or any(configured.values()))
+
+    # The status code carries the verdict: orchestrators and load balancers
+    # (k8s readiness probes, ALB health checks) only look at the code, so an
+    # unhealthy instance must not answer 200. The body keeps the detail for
+    # clients that want to know *why*.
+    return JSONResponse(
+        status_code=200 if healthy else 503,
+        content={
+            "status": "ok" if healthy else "degraded",
+            "version": app.version,
+            "graph_loaded": graph_loaded,
+            "llm": llm,
+            "healthy": healthy,
+        },
+    )
 
 
 @app.get("/trending")

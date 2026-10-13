@@ -120,6 +120,7 @@ Research Topic
 | **Critique & revision** | Automatic scoring, hallucination detection, and citation validation with configurable strictness |
 | **Deep controls** | Configure search depth, source count, critic strictness, and custom model overrides |
 | **Research queue** | Click multiple topics and they run sequentially - no parallel conflicts |
+| **Health check** | `GET /health` reports status, version, provider and pipeline configuration for orchestrators - local state only, no LLM call |
 
 ---
 
@@ -375,6 +376,22 @@ cd frontend && npm run dev
 ```
 
 Open `http://localhost:5173` and navigate to `/app` to start researching.
+
+**Health & readiness probe:**
+
+```bash
+curl http://localhost:8000/health
+# {"status": "ok", "version": "0.4.0", "graph_loaded": true,
+#  "llm": {"configured": {"ollama": true, ...}}, "healthy": true}
+
+# Also verify the local model server is reachable (network I/O, opt-in)
+curl "http://localhost:8000/health?probe=true"
+```
+
+An unready instance answers **`503`** with `"status": "degraded"`, so a
+container orchestrator or load balancer that only checks the status code works
+without parsing the body. Without `?probe=true` the endpoint performs no network
+I/O, so it is cheap enough to call on a short interval.
 
 1. Enter a research topic (e.g., *"Impact of solid-state batteries on EV range"*)
 2. Configure depth (Fast / Balanced / Deep), source count (5–50), critic strictness, and LLM provider

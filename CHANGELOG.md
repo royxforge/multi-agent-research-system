@@ -42,6 +42,22 @@
 
 ---
 
+## [0.4.0] - 2026-10-13
+
+### Added
+
+- **Health endpoint**: `GET /health` reports service status, the version, which LLM backends are configured and whether the research graph is loaded, so a supervisor, container orchestrator or load balancer can decide whether an instance is ready without spending a research request. No network I/O happens by default; `?probe=true` additionally checks whether the Ollama server is reachable (a missing model server is the most common cause of jobs that time out). An unready instance now answers **HTTP 503** with `"status": "degraded"` instead of always returning `200`, so a probe that only inspects the status code cannot mistake a degraded instance for a healthy one:
+
+  ```json
+  {
+    "status": "ok",
+    "version": "0.4.0",
+    "graph_loaded": true,
+    "llm": {"configured": {"ollama": true, "openai": false}, "ollama_reachable": true},
+    "healthy": true
+  }
+  ```
+
 ## Unreleased / In Development
 
 The following capabilities are under active investigation or development and have not yet been incorporated into a formal release:

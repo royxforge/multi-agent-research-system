@@ -6,8 +6,8 @@ authors:
     email: royxforge@gmail.com
     orcid: ""
 title: "Multi-Agent Research System: Autonomous Academic Research with Multi-Agent Verification"
-version: 0.3.0
-date-released: 2026-07-20
+version: 0.4.0
+date-released: 2026-10-13
 url: "https://github.com/royxforge/multi-agent-research-system"
 repository-code: "https://github.com/royxforge/multi-agent-research-system"
 license: MIT
