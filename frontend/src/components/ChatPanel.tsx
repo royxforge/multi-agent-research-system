@@ -63,26 +63,6 @@ function CopyButton({ text }: { text: string }) {
   )
 }
 
-/* ─── Source Citation Badge ─── */
-
-function SourceBadge({ index, sources }: { index: number; sources: string[] }) {
-  const source = sources[index - 1]
-  if (!source) return <span className="text-primary-600 dark:text-primary-400 font-medium">[S{index}]</span>
-
-  return (
-    <a
-      href={source}
-      target="_blank"
-      rel="noreferrer"
-      className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium bg-primary-50/80 dark:bg-primary-950/30 text-primary-600 dark:text-primary-400 hover:bg-primary-100/80 dark:hover:bg-primary-900/30 transition-colors no-underline"
-      title={`Open source ${index}: ${extractDomain(source)}`}
-    >
-      S{index}
-      <ExternalLink className="w-2 h-2 opacity-60" />
-    </a>
-  )
-}
-
 /* ─── Render message content with source badges ─── */
 
 function MessageContent({ content, sources }: { content: string; sources: string[] }) {

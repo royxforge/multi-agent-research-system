@@ -7,11 +7,15 @@
 <img src="https://img.shields.io/badge/LangGraph-Multi--Agent-14b8a6?style=flat-square" />
 <img src="https://img.shields.io/badge/Local-Ollama-orange?style=flat-square" />
 <img src="https://img.shields.io/badge/Cloud-10%2B%20Providers-6366f1?style=flat-square" />
-<img src="https://img.shields.io/badge/Benchmarks-8%20suites%20passing-brightgreen?style=flat-square" />
+<a href="https://github.com/royxforge/multi-agent-research-system/actions/workflows/ci.yml"><img src="https://github.com/royxforge/multi-agent-research-system/actions/workflows/ci.yml/badge.svg" alt="CI" /></a>
 <img src="https://img.shields.io/badge/License-MIT-6366f1?style=flat-square" />
 </p>
 
-> An autonomous, multi-agent system that performs deep academic research, analyzes complex papers, and synthesizes comprehensive reviews with verified citations. Three agents - Researcher, Analyst, Critic - collaborate in a feedback loop with up to 3 revision passes, streamed live over Server-Sent Events, with a React 19 frontend for exploring the resulting knowledge graph, images, citations, and follow-up chat.
+> **Academic research run as three separate agents — Researcher, Analyst, Critic — where the Critic sees only the draft and its sources, and can send it back for up to three revisions.** Results stream over Server-Sent Events into a React 19 frontend with a knowledge graph, extracted citations and follow-up chat. Works against local Ollama or 10+ cloud providers.
+>
+> **Result:** every non-LLM stage runs in single-digit milliseconds — chunking reaches **2.36B chars/s** and cached image search is **10,184×** faster than a cold query — so the latency budget goes to LLM calls, not plumbing.
+>
+> **Try it on CPU, no key:** `python benchmark/benchmark_runner.py`
 
 ---
 
@@ -32,11 +36,11 @@
 
 ## The Problem
 
-Deep research is a synthesis problem disguised as a search problem. A single LLM call against a topic produces fluent prose with no guarantee any of it is true - sources get invented, numbers get rounded into confidence they haven't earned, and there is no mechanism that catches a hallucinated claim before it reaches the reader. Manual literature review avoids this failure mode but doesn't scale: reading, ranking, and cross-referencing dozens of papers by hand is exactly the kind of high-volume, well-defined cognitive labor automation should be doing.
+A literature review is only as good as its citations, and a single LLM asked to produce one has no way to check itself. It will cite a paper that does not exist, attach a real DOI to the wrong title, and summarise a figure it never saw - fluently, in exactly the same tone it uses for the parts that are correct.
 
-The core requirement is not "generate a report." It is "generate a report that has been checked."
+Prompting harder does not fix this, because the model writing the claim is also the model judging it. What changes the outcome is a second pass over the draft with a different objective and no access to the first pass's reasoning, with the authority to fail it.
 
-**Multi-Agent Research System answers this by never letting a single model both write and grade its own work.**
+**Multi-Agent Research System runs research, drafting and criticism as three separate LangGraph nodes.** The Critic sees only the draft and its sources, scores it for fabricated claims and broken citation integrity, and that score decides whether the draft ships or goes back for revision - up to three passes, streamed live over Server-Sent Events.
 
 ---
 

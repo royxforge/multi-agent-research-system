@@ -25,6 +25,17 @@
 
 ---
 
+## [Unreleased]
+
+### Fixed
+
+- **Frontend lint was failing on the tree CI runs `npm run lint` against**: 13 `eslint` errors are resolved, so the step now reports 0 errors (one pre-existing `exhaustive-deps` warning remains in `App.tsx`). The fixes are behavioural only where a stale-render bug was involved: `Welcome.tsx` and `ReportView.tsx` no longer call `setState` synchronously inside an effect (the speech-support check initialises lazily and the trending-topics loader starts from its initial `true` state), `ResearchForm.tsx` resets the provider highlight in the input handlers instead of an effect and syncs `selectedTopic` during render using React's documented *adjust an input's state when a prop changes* pattern, and `fadeUp` declares its cubic-bezier ease as a typed tuple because a bare literal widened to `number[]` and failed `tsc` (5 `TS2322` errors in `npm run build`, which also now passes).
+- **Unused imports, props and bindings** removed across `ChatPanel.tsx`, `ImageGallery.tsx`, `ReportView.tsx`, `ResearchForm.tsx` and `lib/api.ts` (`SourceBadge`, `Shuffle`, `X`, the unused `gradient`/`topic` props, an unused `idx`, and a catch binding).
+
+### Added
+
+- **`requirements-dev.txt`** with pytest, pytest-asyncio and httpx, so the backend CI job installs exactly what the tests need. The backend run still prints `pytest-asyncio`'s `asyncio_default_fixture_loop_scope` deprecation warning; the default scope matches how the fixtures are used, so the setting is left for the plugin's next major release rather than pinned now.
+
 ## [0.4.0] - 2026-10-13
 
 ### Added

@@ -1,9 +1,9 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
-  Search, Shuffle, Zap, BookOpen, Scale, Globe, Cpu, Key,
+  Search, Zap, BookOpen, Scale, Globe, Cpu, Key,
   Sliders, ChevronDown, ArrowRight, Star, Check, Upload,
-  FileText, X, AlertCircle, Loader2, FileUp, CheckSquare,
+  FileText, AlertCircle, Loader2, FileUp, CheckSquare,
   Square, Trash2,
 } from 'lucide-react'
 import { encryptField } from '../lib/crypto'
@@ -373,13 +373,13 @@ export function ResearchForm({ onSubmit, isLoading, selectedTopic, encryptionPas
     p.label.toLowerCase().includes(providerSearch.toLowerCase())
   )
 
-  useEffect(() => {
-    if (providerSearchOpen) setHighlightedIdx(0)
-  }, [providerSearch, providerSearchOpen])
-
-  useEffect(() => {
+  // Adjust local state during render when the incoming prop changes, rather
+  // than syncing it from an effect (avoids a cascading re-render).
+  const [prevSelectedTopic, setPrevSelectedTopic] = useState(selectedTopic)
+  if (selectedTopic !== prevSelectedTopic) {
+    setPrevSelectedTopic(selectedTopic)
     if (selectedTopic) setTopic(selectedTopic)
-  }, [selectedTopic])
+  }
 
   useEffect(() => {
     if (textareaRef.current) {
@@ -706,7 +706,7 @@ export function ResearchForm({ onSubmit, isLoading, selectedTopic, encryptionPas
                       </div>
                     )}
                     <div ref={comboboxRef} className="relative">
-                      <button type="button" onClick={() => { setProviderSearchOpen(!providerSearchOpen); if (!providerSearchOpen) setProviderSearch('') }}
+                      <button type="button" onClick={() => { setProviderSearchOpen(!providerSearchOpen); setHighlightedIdx(0); if (!providerSearchOpen) setProviderSearch('') }}
                         className="w-full flex items-center justify-between px-3 py-2.5 bg-warm-50/60 dark:bg-white/[0.04] border border-warm-200/50 dark:border-white/[0.08] rounded-xl text-sm text-warm-700 dark:text-warm-300 hover:border-warm-300/50 dark:hover:border-white/[0.12] focus:outline-none focus:border-primary-400/60 dark:focus:border-primary-500/40 focus:ring-1 focus:ring-primary-500/20 transition-all duration-200">
                         <span className="flex items-center gap-2">
                           {PROVIDERS.find(p => p.value === provider)?.label || provider}
@@ -721,7 +721,7 @@ export function ResearchForm({ onSubmit, isLoading, selectedTopic, encryptionPas
                           <div className="p-2 border-b border-warm-100/50 dark:border-white/[0.06]">
                             <div className="relative">
                               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-warm-400 pointer-events-none" />
-                              <input type="text" value={providerSearch} onChange={(e) => setProviderSearch(e.target.value)}
+                              <input type="text" value={providerSearch} onChange={(e) => { setProviderSearch(e.target.value); setHighlightedIdx(0) }}
                                 placeholder="Search providers..."
                                 className="w-full pl-9 pr-3 py-2 bg-warm-50/60 dark:bg-white/[0.04] border border-warm-200/50 dark:border-white/[0.08] rounded-lg text-xs text-warm-700 dark:text-warm-300 focus:outline-none focus:border-primary-400/60 placeholder:text-warm-400 transition-colors"
                                 autoFocus

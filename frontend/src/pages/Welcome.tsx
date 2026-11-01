@@ -19,7 +19,7 @@ const FALLBACK_TOPICS = [
 ]
 
 /* ─── Live metric component (real-time dashboard feel) ─── */
-function LiveMetric({ icon: Icon, label, targetValue, prefix, suffix, decimals, color, gradient, delay }: {
+function LiveMetric({ icon: Icon, label, targetValue, prefix, suffix, decimals, color, delay }: {
   icon: React.ComponentType<{ className?: string }>
   label: string
   targetValue: number
@@ -64,7 +64,7 @@ function LiveMetric({ icon: Icon, label, targetValue, prefix, suffix, decimals, 
           jitterStarted.current = true
           timeoutRef.current = setTimeout(() => {
             intervalRef.current = setInterval(() => {
-              setDisplayValue(prev => {
+              setDisplayValue(() => {
                 const jitter = (Math.random() - 0.5) * (targetValue * jitterRatio)
                 const raw = Math.min(targetValue + jitter, clampMax)
                 return Number(raw.toFixed(decimals))
@@ -129,7 +129,6 @@ export default function Welcome() {
   const [trendingTopicsRefreshing, setTrendingTopicsRefreshing] = useState(false)
 
   useEffect(() => {
-    setTrendingTopicsLoading(true)
     fetchTrendingTopics().then(topics => {
       setTrendingTopics(topics)
       setTrendingTopicsLoading(false)
@@ -166,9 +165,12 @@ export default function Welcome() {
     }
   }
 
+  // Typed as a cubic-bezier tuple: a bare array literal widens to number[],
+  // which framer-motion's Variants type rejects.
+  const easeOut: [number, number, number, number] = [0.22, 1, 0.36, 1]
   const fadeUp = {
     hidden: { opacity: 0, y: 20 },
-    visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease: [0.22, 1, 0.36, 1] } }
+    visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease: easeOut } }
   }
 
   return (

@@ -544,11 +544,22 @@ async def upload_pdf(file: UploadFile | None = File(None)):
         raise HTTPException(status_code=400, detail="Only PDF files are accepted")
 
     try:
-        raw_bytes = await file.read()
+        # Bound the read so an oversized body is rejected before it is fully
+        # buffered in memory (30MB test payloads used to be read, then checked).
+        max_bytes = 50 * 1024 * 1024  # 50MB limit
+        chunks: list[bytes] = []
+        total = 0
+        while True:
+            chunk = await file.read(1024 * 1024)
+            if not chunk:
+                break
+            total += len(chunk)
+            if total > max_bytes:
+                raise HTTPException(status_code=413, detail="File too large (max 50MB)")
+            chunks.append(chunk)
+        raw_bytes = b"".join(chunks)
         if not raw_bytes:
             raise HTTPException(status_code=400, detail="Uploaded file is empty")
-        if len(raw_bytes) > 50 * 1024 * 1024:  # 50MB limit
-            raise HTTPException(status_code=413, detail="File too large (max 50MB)")
 
         processor = PDFProcessor(max_concurrency=1)
         text = await asyncio.to_thread(processor._extract_and_validate, raw_bytes)

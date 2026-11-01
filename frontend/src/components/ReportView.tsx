@@ -86,7 +86,6 @@ function transformCitations(text: string, style: CitationStyle): string {
 
   // Map [S#] references to formatted citations
   const citationMap = new Map<string, string>()
-  let idx = 1
 
   // APA: (Author, Year)
   if (style === 'apa') {
@@ -129,7 +128,7 @@ export function ReportView({ data, provider, model }: Props) {
   const [copied, setCopied] = useState(false)
   const [showGraph, setShowGraph] = useState(true)
   const [isSpeaking, setIsSpeaking] = useState(false)
-  const [speechSupported, setSpeechSupported] = useState(false)
+  const [speechSupported] = useState(() => typeof window !== 'undefined' && 'speechSynthesis' in window)
   const [isFullscreen, setIsFullscreen] = useState(false)
   const [scrollProgress, setScrollProgress] = useState(0)
   const [showBackToTop, setShowBackToTop] = useState(false)
@@ -158,7 +157,6 @@ export function ReportView({ data, provider, model }: Props) {
 
   /* ─── Lifecycle ─── */
   useEffect(() => {
-    setSpeechSupported('speechSynthesis' in window)
     return () => window.speechSynthesis.cancel()
   }, [])
 
@@ -583,7 +581,7 @@ export function ReportView({ data, provider, model }: Props) {
 
               {/* Media Gallery */}
               <ErrorBoundary>
-                <ImageGallery images={data.images || []} graphs={data.graphs || []} topic={data.topic || ''} />
+                <ImageGallery images={data.images || []} graphs={data.graphs || []} />
               </ErrorBoundary>
             </div>
           </div>

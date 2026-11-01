@@ -9,7 +9,6 @@ import type { ImageResult } from '../types'
 interface Props {
   images: ImageResult[]
   graphs: ImageResult[]
-  topic: string
 }
 
 function extractDomain(url: string): string {
@@ -206,13 +205,11 @@ function MediaSection({
   title,
   icon,
   items,
-  topic,
   accentColor,
 }: {
   title: string
   icon: React.ReactNode
   items: ImageResult[]
-  topic: string
   accentColor: string
 }) {
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null)
@@ -295,7 +292,7 @@ function EmptyMedia() {
 
 /* ─── Main Component ─── */
 
-export function ImageGallery({ images, graphs, topic }: Props) {
+export function ImageGallery({ images, graphs }: Props) {
   const hasContent = useMemo(
     () => images.length > 0 || graphs.length > 0,
     [images, graphs]
@@ -310,7 +307,6 @@ export function ImageGallery({ images, graphs, topic }: Props) {
         title="Related Images"
         icon={<ImageIcon className="w-4 h-4" />}
         items={images}
-        topic={topic}
         accentColor="#6366f1"
       />
 
@@ -319,7 +315,6 @@ export function ImageGallery({ images, graphs, topic }: Props) {
         title="Charts & Visualizations"
         icon={<BarChart3 className="w-4 h-4" />}
         items={graphs}
-        topic={topic}
         accentColor="#f59e0b"
       />
     </div>

@@ -80,7 +80,7 @@ async function safeParseError(response: Response): Promise<string | null> {
   try {
     const payload = (await response.json()) as { detail?: string }
     return payload.detail ?? null
-  } catch (error) {
+  } catch {
     return null
   }
 }
