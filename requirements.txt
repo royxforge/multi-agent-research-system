@@ -15,7 +15,7 @@ aiohttp>=3.9.0
 networkx>=3.0
 cryptography>=41.0.0
 markdown>=3.6
-python-multipart>=0.0.9
+python-multipart>=0.0.32
 # Security: XXE-safe XML parsing for arXiv API responses
 defusedxml>=0.7.1
 # Security: HTML sanitisation for report export (bleach preferred; nh3 is a fallback)
